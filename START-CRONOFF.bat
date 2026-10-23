@@ -1,0 +1,11 @@
+@echo off
+rem Cronoff on your own computer (made by yehon106). Double-click this file.
+cd /d "%~dp0"
+where node >nul 2>nul
+if errorlevel 1 (
+  echo Node.js is not installed. Install it from https://nodejs.org ^(the LTS version^), then double-click this file again.
+  pause
+  exit /b 1
+)
+node local-server\cronoff-server.js %*
+pause

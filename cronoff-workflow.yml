@@ -1,0 +1,141 @@
+# The one workflow file for Cronoff (made by yehon106). Create it ONCE in GitHub: Add file -> Create new file,
+# type the name  .github/workflows/cronoff.yml  and paste this whole text. See START-HERE.md.
+#
+# It does three things:
+#   1. Every time you upload files: moves loose files named like  api1auth.js  into their folders (api/auth.js).
+#      So you never have to upload a folder, only plain files.
+#   2. Actions -> "Cronoff tasks" -> Run workflow -> fetch-language-files : saves Python, SQL and Lua into your repo.
+#   3. Actions -> "Cronoff tasks" -> Run workflow -> build-desktop-apps    : builds the Windows, Mac and Linux apps.
+name: Cronoff tasks
+
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What do you want to do?"
+        type: choice
+        required: true
+        default: build-desktop-apps
+        options:
+          - build-desktop-apps
+          - fetch-language-files
+      tag:
+        description: "Only for build-desktop-apps: release name (any text without spaces, for example app-v1)"
+        required: false
+        default: "app-v1"
+
+permissions:
+  contents: write
+
+jobs:
+  # ------------------------------------------------------------------ 1. folders
+  arrange:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Move loose files into their folders
+        id: move
+        run: |
+          node - <<'EOF'
+          const fs = require("fs"), path = require("path");
+          let moved = 0;
+          // files that are not used any more are removed
+          for (const old of ["monitor", "api/track.js", "SETUP-ACCOUNTS-AND-STATS.md"]) {
+            if (fs.existsSync(old)) { fs.rmSync(old, { recursive: true, force: true }); console.log("removed " + old); moved++; }
+          }
+          // a loose file named like  api1auth.js  or  desktop1scripts1prepare-site.js  goes into its folder (the digit 1 stands for "/")
+          for (const name of fs.readdirSync(".")) {
+            const m = /^(api|desktop|local-server)1(.+)$/.exec(name);
+            if (!m || !fs.statSync(name).isFile()) continue;
+            const parts = [m[1], ...m[2].split("1")];
+            if (!parts.every((p) => /^[A-Za-z0-9_][A-Za-z0-9._+-]*$/.test(p))) { console.log("left alone: " + name); continue; }
+            const dest = parts.join("/");
+            fs.mkdirSync(path.dirname(dest), { recursive: true });
+            fs.renameSync(name, dest);
+            console.log(name + "  ->  " + dest);
+            moved++;
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, "moved=" + moved + "\n");
+          EOF
+      - name: Save the folders
+        if: steps.move.outputs.moved != '0'
+        run: |
+          git config user.name "cronoff-bot"
+          git config user.email "cronoff-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "Move uploaded files into their folders"
+          git push
+
+  # ------------------------------------------------------------------ 2. language files
+  language-files:
+    if: github.event_name == 'workflow_dispatch' && inputs.task == 'fetch-language-files'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Download (checked against npm's hashes)
+        run: node local-server/get-vendor.js
+      - name: Save into the repository
+        run: |
+          git config user.name "cronoff-bot"
+          git config user.email "cronoff-bot@users.noreply.github.com"
+          git add -f vendor
+          git diff --cached --quiet && echo "Nothing new to save" || (git commit -m "Add language runtime files (Python, SQL, Lua)" && git push)
+
+  # ------------------------------------------------------------------ 3. desktop apps
+  build:
+    if: github.event_name == 'workflow_dispatch' && inputs.task == 'build-desktop-apps'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+      - name: Build the app
+        working-directory: desktop
+        run: npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ matrix.os }}
+          path: |
+            desktop/dist/Cronoff-Setup.exe
+            desktop/dist/Cronoff-Mac.dmg
+            desktop/dist/Cronoff-Linux.AppImage
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: apps
+          merge-multiple: true
+      - name: Show what was built
+        run: ls -la apps
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: Cronoff apps (${{ github.event.inputs.tag }})
+          body: |
+            Cronoff desktop app. Works offline.
+            - Windows: Cronoff-Setup.exe
+            - Mac: Cronoff-Mac.dmg
+            - Linux: Cronoff-Linux.AppImage (make it executable, then run it)
+            The apps are not code-signed, so Windows and Mac show a warning the first time. See SETUP-DESKTOP-APP.md.
+          files: apps/*
+          make_latest: true
