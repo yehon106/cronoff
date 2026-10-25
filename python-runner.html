@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python Runner Online - Run Python in Your Browser, Even Offline | Cronoff</title>
+<meta name="description" content="Run Python code online in your browser with Cronoff. A free Python runner and editor with input(), graphics, turtle and pygame-style games. Works offline. No sign-up.">
+<meta name="author" content="yehon106">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Python runner online - Cronoff">
+<meta property="og:description" content="Run Python in your browser. Free, no sign-up, works offline.">
+<link rel="icon" type="image/png" href="/icon-512.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"Cronoff Python Runner","alternateName":["Cronoff","Python runner online","Online Python compiler"],"applicationCategory":"DeveloperApplication","operatingSystem":"Any","browserRequirements":"Requires JavaScript and a modern browser","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"yehon106"},"description":"Free online Python runner and code editor that runs in your browser and works offline."}
+</script>
+<style>
+  :root { --bg:#14171c; --bar:#1b1f26; --line:#2b313b; --ink:#e3e8ef; --muted:#8590a2; --accent:#19b5c8; --accent-ink:#06222a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header, main, footer { max-width: 760px; margin: 0 auto; padding: 18px; }
+  header { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  header b { font-size:22px; letter-spacing:-.02em; }
+  a { color: var(--accent); }
+  .cta { display:inline-block; background:var(--accent); color:var(--accent-ink); font-weight:700; text-decoration:none; padding:10px 18px; border-radius:8px; }
+  h1 { font-size:34px; line-height:1.15; letter-spacing:-.02em; margin:10px 0 8px; }
+  h2 { font-size:22px; margin:34px 0 8px; }
+  pre { background:var(--bar); border:1px solid var(--line); border-radius:8px; padding:12px 14px; overflow:auto; }
+  li { margin:4px 0; }
+  footer { color:var(--muted); font-size:13px; border-top:1px solid var(--line); margin-top:40px; }
+</style>
+</head>
+<body>
+<header><b>Cronoff</b><nav><a href="/">Open Cronoff</a> &middot; <a href="/about.html">About</a></nav></header>
+<main>
+  <h1>Python runner online</h1>
+  <p>Cronoff runs Python in your browser. Type or paste a program, press Run, and see the output. There is no sign-up, nothing to install, and after your first visit it also works without internet.</p>
+  <p><a class="cta" href="/">Run Python now</a></p>
+
+  <h2>Try this</h2>
+<pre>name = input("Your name? ")
+for i in range(3):
+    print("Hello", name, i)</pre>
+  <p>Cronoff asks for your input in a box under the output, just like a terminal.</p>
+
+  <h2>What Python can do in Cronoff</h2>
+  <ul>
+    <li>Real Python, running on your device (not a look-alike).</li>
+    <li><code>input()</code>, <code>print()</code>, <code>time.sleep()</code> and the standard library.</li>
+    <li>Graphics: a turtle look-alike, pygame-style games and a simple <code>gfx</code> window.</li>
+    <li>Many pure-Python packages, and <code>import</code> between your own tabs.</li>
+    <li>Clear errors that point to the line that failed, and red markers before you run.</li>
+    <li>Install it as an app, or save your tabs to an optional account.</li>
+  </ul>
+
+  <h2>Other languages</h2>
+  <p>The same page also runs JavaScript, TypeScript, SQL, Lua, Ruby, C/C++, Scheme and Prolog. <a href="/about.html">More about Cronoff</a>.</p>
+</main>
+<footer>Cronoff by yehon106 &middot; <a href="/">Code runner</a> &middot; <a href="/about.html">About</a></footer>
+</body>
+</html>

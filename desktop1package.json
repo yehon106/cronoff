@@ -1,0 +1,76 @@
+{
+  "name": "cronoff-desktop",
+  "productName": "Cronoff",
+  "version": "1.0.0",
+  "description": "Cronoff: a code runner for Python, JavaScript, HTML and more. Works offline. Made by yehon106.",
+  "author": "yehon106",
+  "license": "MIT",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "prepare-site": "node scripts/prepare-site.js",
+    "start": "npm run prepare-site && electron .",
+    "dist": "npm run prepare-site && electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "build": {
+    "appId": "com.yehon106.cronoff",
+    "productName": "Cronoff",
+    "copyright": "Made by yehon106",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "updater.js",
+      "app-config.json",
+      "package.json",
+      "site/**/*",
+      "server/**/*"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "Cronoff-Setup.${ext}",
+      "shortcutName": "Cronoff"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.png",
+      "artifactName": "Cronoff-Mac.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development",
+      "icon": "build/icon.png",
+      "artifactName": "Cronoff-Linux.${ext}"
+    }
+  }
+}
