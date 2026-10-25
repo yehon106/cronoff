@@ -180,7 +180,7 @@
   <label title="Type for, if, def, class... and press Tab to get the whole pattern with places to fill in (Tab moves between them)."><input type="checkbox" data-set="snippets"> Patterns (for, if, def...)</label>
   <label title="Optional. Leave empty to use this site's own code server. To use the server on your own computer from this page, type its address, for example http://localhost:3000 (see the local server guide)."><span>Code server address</span> <input id="serverUrl" type="text" placeholder="(this site)" spellcheck="false" autocapitalize="off" style="width:150px"></label>
   <a href="/about.html" target="_blank" rel="noopener" style="font-size:12px;color:var(--accent)">About Cronoff</a>
-  <div style="font-size:11px;opacity:.6">Editor build: autocorrect</div>
+  <div style="font-size:11px;opacity:.6">Editor build: autocorrect-keys</div>
 </div>
 <main id="main" data-layout="right">
   <section id="editorSec">
@@ -4845,17 +4845,22 @@ box-shadow|Shadow
   delete ENGLISH.doesnt; CONTRACT.doesnt = "doesn't"; CONTRACT.theyre = "they're";    // contractions only in comments and HTML text (an apostrophe would break a string)
   delete ENGLISH.theyre;
 
-  // Typos we can be sure of, made from the words of the language itself: two neighbouring letters swapped (pritn), a doubled letter (printt), a missing letter in long words.
+  // Typos we can be sure of, made from the words of the language itself: two neighbouring letters swapped (pritn), a doubled letter (printt),
+  // a missing letter in long words, or a letter hit by the key next to it (priny, prunt). Any made-up typo that is a REAL English word is thrown away
+  // (strong is one key from string, sorter from sorted): REAL_WORDS lists those, found by checking every typo against a full dictionary.
+  const REAL_WORDS = new Set("aleft apert apter arise arrah begun birder bream canvass capitalise carte centre cerate charta checker clads claes claws cleat cloze cointer collage collection colog combination commot concert condole consol consols constrain constrictor counted couter covert crare crows cwtch dasher dashes debugged decare deffer degree degreed delegatee deter dimps docile encore endure entires enviro evert extend filtre fixer fixes flood flota foxed fromenties froward groupy hodden hudden implement include included incudes infernal initialisation inned inter interrace later loafs loser lowed march martin medina mesian moduli numbed odder opacify outed outlie outre overrife overrode overrude paire parae pares parial paris patrial permutation pointe pointed positon potion praams prase promisee protecter prunt punctation quite radian randing randon ransom rawest redline redlines reeject reference referenced refract refry relace reminder require requirer requires requite requited resole retore retuning revere revered reverences reveres revers reverse reverser reverses satisfied scand scanned scant sealer setoff shirt shott sighed signee signer singed slide slive sloid snift snort snuffle softed soldi sorter sortes sotted spice spilt sprint spuer stein stings stirp stocky strict strigs strike strong strooke strop strout strung suing supper swaled synchronised synchronize synchronizer synchronizes theow theows throe throes throwe tittle toady trigged tulle ubique undefied under unform unrefined upped uprate valued veery versin visile whole writs wrote".split(" "));
+  const KEY_NEAR = { q: "wa", w: "qeasd", e: "wrsdf", r: "etdfg", t: "ryfgh", y: "tughj", u: "yihjk", i: "uojkl", o: "ipkl", p: "ol", a: "qwsz", s: "awedxz", d: "serfcx", f: "drtgvc", g: "ftyhbv", h: "gyujnb", j: "huikmn", k: "jiolm", l: "kop", z: "asx", x: "zsdc", c: "xdfv", v: "cfgb", b: "vghn", n: "bhjm", m: "njk" };
   const fixCache = {};
   function makeFixes(words, shortOnes) {
     const known = new Set(), targets = new Set(), map = new Map(), bad = new Set();
     for (const w of words) if (/^[A-Za-z]+$/.test(w)) { known.add(w.toLowerCase()); if (w.length >= 5) targets.add(w); }
-    const add = (typo, w) => { if (typo === w.toLowerCase() || known.has(typo)) return; if (map.has(typo) && map.get(typo) !== w) bad.add(typo); else map.set(typo, w); };
+    const add = (typo, w) => { if (typo === w.toLowerCase() || known.has(typo) || REAL_WORDS.has(typo)) return; if (map.has(typo) && map.get(typo) !== w) bad.add(typo); else map.set(typo, w); };
     for (const w of targets) {
       const l = w.toLowerCase();
       for (let i = 0; i < l.length - 1; i++) if (l[i] !== l[i + 1]) add(l.slice(0, i) + l[i + 1] + l[i] + l.slice(i + 2), w);   // pritn
       for (let i = 0; i < l.length; i++) add(l.slice(0, i + 1) + l.slice(i), w);                                                  // printt
       if (l.length >= 7) for (let i = 1; i < l.length; i++) add(l.slice(0, i) + l.slice(i + 1), w);                               // fucntion -> functon
+      for (let i = 1; i < l.length; i++) for (const c of KEY_NEAR[l[i]] || "") add(l.slice(0, i) + c + l.slice(i + 1), w);          // priny: the neighbouring key
     }
     for (const t of bad) map.delete(t);
     for (const [t, w] of shortOnes || []) if (known.has(w.toLowerCase()) || [...known].some((x) => x === w)) map.set(t, w);
