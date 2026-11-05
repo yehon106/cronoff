@@ -9,6 +9,8 @@
 name: Cronoff tasks
 
 env:
+  # Pinned Pyodide version: must equal PYODIDE in local-server/get-vendor.js, PYODIDE_VERSION in index.html and PYO_VERSION in sw.js.
+  PYODIDE_VERSION: "0.26.4"
   # The character in your file names that stands for "/" (api1auth.js -> api/auth.js). Change it here if you use another one,
   # for example "__" or "--" (see START-HERE.md). It must also be the one used in the names of the files you upload.
   SEPARATOR: "1"
@@ -76,7 +78,22 @@ jobs:
         with:
           node-version: 20
       - name: Download (checked against npm's hashes)
-        run: node local-server/get-vendor.js
+        run: node local-server/get-vendor.js --force
+      - name: Verify Pyodide (version, all 5 files, valid wasm and zip)
+        run: |
+          set -e
+          V="$PYODIDE_VERSION"
+          grep -q "PYODIDE = \"$V\"" local-server/get-vendor.js || { echo "get-vendor.js is not pinned to $V"; exit 1; }
+          cd vendor/pyodide
+          for f in pyodide.js pyodide.asm.js pyodide.asm.wasm python_stdlib.zip pyodide-lock.json; do
+            test -s "$f" || { echo "MISSING vendor/pyodide/$f"; exit 1; }
+          done
+          test "$(head -c 4 pyodide.asm.wasm | od -An -tx1 | tr -d ' \n')" = "0061736d" || { echo "pyodide.asm.wasm is not a wasm file"; exit 1; }
+          test "$(stat -c %s pyodide.asm.wasm)" -gt 9000000 || { echo "pyodide.asm.wasm is too small"; exit 1; }
+          python3 -c "import zipfile,sys; sys.exit(1 if zipfile.ZipFile('python_stdlib.zip').testzip() else 0)" || { echo "python_stdlib.zip is corrupt"; exit 1; }
+          node -e 'const l=require("./pyodide-lock.json"); if(l.info.version!==process.argv[1]){console.error("lock is "+l.info.version);process.exit(1)}' "$V"
+          grep -q "\"pyodide\": \"$V\"" ../manifest.json || { echo "vendor/manifest.json is not $V"; exit 1; }
+          echo "Pyodide $V OK"
       - name: Save into the repository
         run: |
           git config user.name "cronoff-bot"
