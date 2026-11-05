@@ -453,9 +453,51 @@ function friendlyPy(raw) {
 }
 
 let pyodide;
+// ---- Pyodide start-up: ONE pinned version (PYO_VERSION), files checked BEFORE loadPyodide, same version from the CDN as fallback.
+const PYO_NEEDED = ["pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"];
+// "" when every needed file under base b exists and is not a web page, else a short reason.
+async function pyoCheck(b) {
+  for (const f of PYO_NEEDED) {
+    let r;
+    try { r = await fetch(b + f, { method: "HEAD", cache: "no-store" }); } catch (e) { return f + ": unreachable (blocked or offline)"; }
+    if (!r.ok) return f + ": HTTP " + r.status;
+    const ct = (r.headers.get("content-type") || "").toLowerCase();
+    if (ct.indexOf("text/html") >= 0) return f + ": got a web page instead of the file";
+  }
+  try {
+    const r = await fetch(b + "pyodide-lock.json", { cache: "no-store" });
+    const v = (await r.json()).info.version;
+    if (v !== PYO_VERSION) return "pyodide-lock.json is version " + v + ", need " + PYO_VERSION;
+  } catch (e) { return "pyodide-lock.json: not valid JSON"; }
+  return "";
+}
+// Loads from base b. Any asset failure (Emscripten exit(1) / abort) becomes a normal Error with a clear message.
+async function pyoLoad(b) {
+  self.loadPyodide = undefined; self._createPyodideModule = undefined;   // a failed earlier attempt must not leak into this one
+  importScripts(b + "pyodide.js");
+  if (typeof self.loadPyodide !== "function") throw new Error("pyodide.js loaded but loadPyodide is missing");
+  try {
+    return await self.loadPyodide({ indexURL: b, lockFileURL: b + "pyodide-lock.json", stdLibURL: b + "python_stdlib.zip", checkAPIVersion: true });
+  } catch (e) {
+    const m = String((e && e.message) || e).split("\n")[0];
+    if ((e && e.name === "ExitStatus") || /exit\(\d+\)|Program terminated|abort/i.test(m)) throw new Error("Python " + PYO_VERSION + " files could not be loaded (" + m + ")");
+    throw new Error(m);
+  }
+}
+async function pyoStart() {
+  const notes = [];
+  for (const b of BASES) {
+    const where = b.indexOf("/vendor/") >= 0 ? "this site" : "CDN";
+    const bad = await pyoCheck(b);
+    if (bad) { notes.push(where + ": " + bad); continue; }
+    try { const py = await pyoLoad(b); RUNTIME_SRC = where === "CDN" ? "the internet (CDN)" : "this site"; return py; }
+    catch (e) { notes.push(where + ": " + String((e && e.message) || e).split("\n")[0]); }
+  }
+  throw new Error("Python " + PYO_VERSION + " not available (" + notes.join("; ") + ")\nIf you run this site: GitHub > Actions > Cronoff tasks > fetch-language-files (see SETUP-RUNTIMES.md).");
+}
 const LANG = {
   async init() {
-    await withBases(async (b) => { importScripts(b + "pyodide.js"); pyodide = await loadPyodide({ indexURL: b }); }, "pyodide.asm.wasm");
+    pyodide = await pyoStart();
     pyodide.setStdout({ raw: O.handle });
     pyodide.setStderr({ raw: E.handle });
     pyodide.setStdin({ stdin: () => readLine() });
@@ -1056,6 +1098,54 @@ const LANG = {
 </script>
 
 <script id="w-scheme" type="text/plain">
+// scheme.js is a Node-style bundle: it calls require("fs"/"path"/"readline") and uses process while loading.
+// A browser worker has none of these, so they are provided here (in-memory fs) BEFORE scheme.js is loaded.
+(function () {
+  const files = new Map(), dirs = new Set(["/"]);
+  const norm = (p) => { const o = []; for (const x of String(p).replace(/\\/g, "/").split("/")) { if (!x || x === ".") continue; if (x === "..") o.pop(); else o.push(x); } return "/" + o.join("/"); };
+  const dirOf = (k) => k.slice(0, k.lastIndexOf("/")) || "/";
+  const err = (code, p, op) => { const e = new Error(code + ": " + (code === "ENOENT" ? "no such file or directory" : "not a directory") + ", " + op + " '" + p + "'"); e.code = code; return e; };
+  const encOf = (o) => (typeof o === "string" ? o : o && o.encoding) || null;
+  const fs = {
+    existsSync: (p) => { const k = norm(p); return files.has(k) || dirs.has(k); },
+    readFileSync(p, o) { const k = norm(p); if (!files.has(k)) throw err("ENOENT", p, "open"); const t = files.get(k); return encOf(o) ? t : new TextEncoder().encode(t); },
+    writeFileSync(p, d) { const k = norm(p); for (let x = dirOf(k); !dirs.has(x); x = dirOf(x)) dirs.add(x); files.set(k, typeof d === "string" ? d : new TextDecoder().decode(d)); },
+    appendFileSync(p, d) { const k = norm(p); this.writeFileSync(p, (files.get(k) || "") + (typeof d === "string" ? d : new TextDecoder().decode(d))); },
+    readdirSync(p) {
+      const k = norm(p); if (!dirs.has(k)) throw err(files.has(k) ? "ENOTDIR" : "ENOENT", p, "scandir");
+      const out = new Set(), pre = k === "/" ? "/" : k + "/";
+      for (const x of [...files.keys(), ...dirs]) if (x !== k && x.startsWith(pre) && x.indexOf("/", pre.length) < 0) out.add(x.slice(pre.length));
+      return [...out].sort();
+    },
+    mkdirSync(p) { const k = norm(p); for (let x = k; !dirs.has(x); x = dirOf(x)) dirs.add(x); },
+    unlinkSync(p) { if (!files.delete(norm(p))) throw err("ENOENT", p, "unlink"); },
+  };
+  const path = {
+    sep: "/", normalize: norm,
+    join: (...a) => norm(a.join("/")),
+    resolve: (...a) => { let r = "/"; for (const x of a) r = String(x)[0] === "/" ? String(x) : r + "/" + x; return norm(r); },
+    dirname: (p) => dirOf(norm(p)),
+    basename: (p, e) => { const b = norm(p).split("/").pop(); return e && b.endsWith(e) ? b.slice(0, -e.length) : b; },
+    extname: (p) => { const b = norm(p).split("/").pop(), i = b.lastIndexOf("."); return i > 0 ? b.slice(i) : ""; },
+  };
+  const readline = { createInterface() { throw new Error("readline is not available in the browser"); } };
+  if (typeof self.process === "undefined") {
+    self.process = {
+      env: {}, argv: [], platform: "browser", version: "v0.0.0", versions: {}, cwd: () => "/",
+      exit(c) { throw new Error("process.exit(" + c + ")"); },
+      nextTick: (f, ...a) => queueMicrotask(() => f(...a)),
+      stdout: { write: (s) => { emit(String(s)); return true; } },
+      stderr: { write: (s) => { emit(String(s), true); return true; } },
+      stdin: { on() {}, setEncoding() {}, resume() {}, pause() {} },
+    };
+  }
+  const mods = { fs, path, readline };
+  self.require = function (n) {
+    const m = mods[String(n).replace(/^node:/, "")];
+    if (m) return m;
+    throw new Error('Dynamic require of "' + n + '" is not supported');
+  };
+})();
 const LANG = {
   async init() {
     importScripts(BASE + "scheme.js");
@@ -2214,7 +2304,9 @@ export function drawPickups(ctx) {
   // Each runtime is loaded from this site first (/vendor/..., filled in at deploy time by local-server/get-vendor.js),
   // and only if that fails from the public CDN. Keep the versions in sync with local-server/get-vendor.js and sw.js.
   const VENDOR = location.origin + "/vendor/";
-  const PYODIDE_CDN = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
+  const PYODIDE_VERSION = "0.26.4";   // pinned: must equal PYODIDE in local-server/get-vendor.js, PYO_VERSION in sw.js and the files in /vendor/pyodide/
+  const PYODIDE_LOCAL = VENDOR + "pyodide/";
+  const PYODIDE_CDN = "https://cdn.jsdelivr.net/pyodide/v" + PYODIDE_VERSION + "/full/";
   const bases = (...b) => "const BASES = " + JSON.stringify(b) + ";\nconst BASE = BASES[0];\n";
   const SQL_BASE = "https://cdn.jsdelivr.net/npm/sql.js@1.14.2/dist/";
   const LUA_BASE = "https://cdn.jsdelivr.net/npm/wasmoon@1.16.0/dist/";
@@ -2224,7 +2316,7 @@ export function drawPickups(ctx) {
     py: {
       name: "Python", exts: ["py"], worker: "w-py", mime: "text/x-python",
       probe: VENDOR + "pyodide/pyodide.asm.wasm",
-      extra: () => bases(VENDOR + "pyodide/", PYODIDE_CDN) + "const PYGAME = " + JSON.stringify($("py-pygame").textContent) + ";\nconst TURTLE = " + JSON.stringify($("py-turtle").textContent) + ";\nconst PREP = " + JSON.stringify($("py-prep").textContent) + ";\n",
+      extra: () => bases(PYODIDE_LOCAL, PYODIDE_CDN) + "const PYO_VERSION = " + JSON.stringify(PYODIDE_VERSION) + ";\nconst PYGAME = " + JSON.stringify($("py-pygame").textContent) + ";\nconst TURTLE = " + JSON.stringify($("py-turtle").textContent) + ";\nconst PREP = " + JSON.stringify($("py-prep").textContent) + ";\n",
       token: /(#.*$)|("""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')|\b(\d+\.?\d*)\b|\b([A-Za-z_]\w*)\b/gm,
       kw: words("False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield"),
       bi: words("print input len range int str float list dict set tuple bool sum min max abs sorted enumerate zip map filter open type isinstance round reversed any all"),
