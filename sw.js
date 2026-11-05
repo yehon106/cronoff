@@ -1,11 +1,11 @@
 /* Cronoff (made by yehon106) service worker: offline support + COOP/COEP headers (needed for SharedArrayBuffer) */
-const APP_CACHE = "cronoff-app-v3";
-const PYO_VERSION = "0.26.4";
-// Cache name kept as-is so existing visitors do not re-download Pyodide.
-const PYO_CACHE = "pyro-pyodide-" + PYO_VERSION;
+const APP_CACHE = "cronoff-app-v4";
+const PYO_VERSION = "0.26.4";   // pinned: same as PYODIDE in local-server/get-vendor.js and PYODIDE_VERSION in index.html
+// New cache names on purpose: they drop any broken Pyodide copy an older worker may have saved.
+const PYO_CACHE = "cronoff-pyodide-" + PYO_VERSION + "-v2";
 const LIB_CACHE = "cronoff-libs-v1";
 // The runtimes served from this site (filled in at deploy time by local-server/get-vendor.js). Bump the v-number when their versions change.
-const VENDOR_CACHE = "cronoff-vendor-v1";
+const VENDOR_CACHE = "cronoff-vendor-v2";
 const VENDOR_CORE = ["/vendor/pyodide/pyodide.js", "/vendor/pyodide/pyodide.asm.js", "/vendor/pyodide/pyodide.asm.wasm", "/vendor/pyodide/python_stdlib.zip", "/vendor/pyodide/pyodide-lock.json",
   "/vendor/sqljs/sql-wasm.js", "/vendor/sqljs/sql-wasm.wasm", "/vendor/wasmoon/index.js", "/vendor/wasmoon/glue.wasm"];
 const CDN_ORIGIN = "https://cdn.jsdelivr.net";
@@ -33,6 +33,14 @@ const CORE = [
 
 const OPTIONAL = ["/index.html", "/manifest.json", "/jscpp.js", "/ts.js", "/scheme.js", "/prolog.js", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png", "/about.html", "/python-runner.html"];
 
+// Only save a response that is really the file: 200, not a web page (SPA/404 page), right type for .wasm, whole body.
+function good(res, url) {
+  if (!res || res.status !== 200 || res.type === "opaque") return false;
+  const ct = (res.headers.get("content-type") || "").toLowerCase();
+  if (ct.indexOf("text/html") >= 0 && !/\.html?$|\/$/.test(new URL(url).pathname)) return false;
+  if (/\.wasm$/.test(new URL(url).pathname) && ct && ct.indexOf("wasm") < 0 && ct.indexOf("octet-stream") < 0) return false;
+  return true;
+}
 // Re-wrap a response with the headers that keep the page cross-origin isolated.
 function isolate(res) {
   if (!res || res.status === 0) return res; // opaque / opaqueredirect: cannot be rewrapped
@@ -42,6 +50,8 @@ function isolate(res) {
   h.set("Cross-Origin-Opener-Policy", "same-origin");
   h.set("Cross-Origin-Embedder-Policy", "require-corp");
   h.set("Cross-Origin-Resource-Policy", "cross-origin");
+  const ct = (h.get("content-type") || "").toLowerCase();
+  if (res.url && /\.wasm(\?|$)/.test(res.url) && ct.indexOf("wasm") < 0) h.set("Content-Type", "application/wasm");
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
@@ -55,7 +65,7 @@ self.addEventListener("install", (e) => {
         VENDOR_CORE.map(async (u) => {
           if (await vendor.match(u)) return;
           const r = await fetch(u, { cache: "reload" });
-          if (r.ok) await vendor.put(u, r);
+          if (good(r, u)) await vendor.put(u, r);
         })
       );
       // Only if the copies on this site are not there: keep the public CDN copy of Python for offline use.
@@ -65,7 +75,7 @@ self.addEventListener("install", (e) => {
           CORE.map(async (u) => {
             if (await pyo.match(u)) return;
             const r = await fetch(u, { mode: "cors", credentials: "omit" });
-            if (r.ok) await pyo.put(u, r);
+            if (good(r, u)) await pyo.put(u, r);
           })
         );
       }
@@ -75,7 +85,7 @@ self.addEventListener("install", (e) => {
           if (await lib.match(u)) return;
           if ((await vendor.match(VENDOR_CORE[6])) && /sql\.js|wasmoon/.test(u)) return;   // already have them from this site
           const r = await fetch(u, { mode: "cors", credentials: "omit" });
-          if (r.ok) await lib.put(u, r);
+          if (good(r, u)) await lib.put(u, r);
         })
       );
       const app = await caches.open(APP_CACHE);
@@ -118,9 +128,10 @@ async function networkFirst(req) {
 async function cdnCacheFirst(cacheName, req) {
   const cache = await caches.open(cacheName);
   const hit = await cache.match(req.url);
-  if (hit) return isolate(hit);
+  if (hit && good(hit, req.url)) return isolate(hit);
+  if (hit) await cache.delete(req.url);
   const res = await fetch(req.url, { mode: "cors", credentials: "omit" });
-  if (res.ok) cache.put(req.url, res.clone());
+  if (good(res, req.url)) cache.put(req.url, res.clone());
   return isolate(res);
 }
 
@@ -128,15 +139,16 @@ async function cdnCacheFirst(cacheName, req) {
 async function vendorCacheFirst(req) {
   const cache = await caches.open(VENDOR_CACHE);
   const hit = await cache.match(req.url);
-  if (hit) return isolate(hit);
+  if (hit && good(hit, req.url)) return isolate(hit);
+  if (hit) await cache.delete(req.url);
   const res = await fetch(req);
-  if (res.ok) cache.put(req.url, res.clone());
+  if (good(res, req.url)) cache.put(req.url, res.clone());
   return isolate(res);
 }
 
 self.addEventListener("fetch", (e) => {
   const req = e.request;
-  if (req.method !== "GET") return;
+  if (req.method !== "GET" || req.headers.has("range")) return;
   const url = new URL(req.url);
   if (url.origin === self.location.origin) {
     // /api/ is never cached: log in state, saved tabs and counters must always come from the server.
