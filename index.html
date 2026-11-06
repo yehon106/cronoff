@@ -81,7 +81,8 @@
   .ftab .x:hover:not(:disabled) { color: var(--err); }
   #tabs #newTab { flex: 0 0 auto; border: 0; padding: 4px 10px; font-size: 18px; line-height: 1; color: var(--muted); align-self: center; }
   #fnameInput { font: inherit; font-weight: 600; color: var(--ink); background: var(--edit); border: 1px solid var(--accent); border-radius: 4px; padding: 2px 6px; width: 190px; max-width: 100%; outline: none; }
-  #clear { margin-left: auto; padding: 2px 10px; font-size: 12px; }
+  #copyOut { margin-left: auto; padding: 2px 10px; font-size: 12px; }
+  #clear { margin-left: 6px; padding: 2px 10px; font-size: 12px; }
   .mono { font: 400 14.5px/1.6 ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; tab-size: 4; }
   .editor { flex: 1; min-height: 0; display: flex; background: var(--edit); }
   #gutter { width: 52px; padding: 14px 10px 14px 0; text-align: right; color: #566074; overflow: hidden; user-select: none; white-space: pre; border-right: 1px solid var(--line); }
@@ -111,6 +112,97 @@
   dialog a.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   #acctBtn { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   dialog { background: var(--bar); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; max-width: min(92vw, 400px); width: 100%; }
+  dialog::backdrop { background: rgba(0, 0, 0, .6); }
+  dialog h2 { margin: 0 0 6px; font-size: 18px; }
+  dialog p { margin: 6px 0; color: var(--muted); font-size: 13px; }
+  dialog input[type=text], dialog input[type=password] { width: 100%; font: inherit; padding: 8px 10px; margin: 6px 0; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
+  dialog [hidden] { display: none !important; }
+  dialog .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  dialog .row button { flex: 1 1 auto; }
+  dialog .primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  dialog .seg button { flex: 1; border-radius: 6px; }
+  dialog .seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  #acctMsg { min-height: 1.3em; font-size: 13px; color: var(--err); margin-top: 6px; }
+  #acctMsg.ok { color: #68d391; }
+  #setPanel button { font: inherit; font-size: 12px; padding: 4px 8px; text-align: left; }
+  #setPanel select { font: inherit; background: var(--edit); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
+  #stdinBox { display: none; width: 100%; box-sizing: border-box; resize: vertical; font: inherit; font-size: 13px; padding: 6px 10px; color: var(--ink); background: var(--edit); border: 0; border-bottom: 1px solid var(--line); outline: none; }
+  #ac { position: fixed; z-index: 70; min-width: 230px; max-width: min(92vw, 400px); background: var(--bar); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 10px 28px rgba(0, 0, 0, .5); font: 13px/1.3 ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; overflow: hidden; }
+  #ac[hidden] { display: none; }
+  #ac ul { list-style: none; margin: 0; padding: 4px; max-height: 216px; overflow-y: auto; }
+  #ac li { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
+  #ac li.sel { background: #2b3a50; }
+  #ac .ic { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 4px; text-align: center; font: 700 11px/18px system-ui, sans-serif; color: #0e1218; background: var(--muted); }
+  #ac .k-k { background: #c792ea; } #ac .k-f, #ac .k-m { background: #82aaff; } #ac .k-v, #ac .k-p { background: #7fdbca; } #ac .k-c { background: #ffcb6b; }
+  #ac .k-s { background: #f78c6c; } #ac .k-t { background: #f07178; } #ac .k-a { background: #c3e88d; } #ac .k-M { background: #89ddff; }
+  #ac .lab { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #ac .lab b { color: var(--accent); font-weight: 700; }
+  #ac .det { flex: 0 0 auto; color: var(--muted); }
+  #ac .acdoc { border-top: 1px solid var(--line); padding: 6px 10px; color: var(--muted); font: 12px/1.4 system-ui, -apple-system, sans-serif; max-height: 4.2em; overflow: hidden; }
+  #pvWrap { display: none; flex: 0 0 auto; height: min(55vh, 420px); min-height: 140px; max-height: 80%; resize: vertical; overflow: hidden; background: #fff; border-bottom: 1px solid var(--line); }
+  #pvWrap iframe { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
+  #code::placeholder { color: var(--muted); opacity: .7; }
+  #gfxWrap { display: none; flex: 0 0 auto; max-height: 75%; overflow: auto; background: #000; border-bottom: 1px solid var(--line); }
+  #gfx { display: block; max-width: 100%; height: auto; margin: 0 auto; outline: none; background: #000; }
+  #out { flex: 1; min-width: 0; margin: 0; padding: 14px; background: var(--out); overflow-x: hidden; overflow-y: auto; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
+  #out .err { color: var(--err); } #out .info { color: var(--info); }
+  #inputRow { display: none; background: var(--out); border-top: 1px solid var(--line); padding: 8px 14px; gap: 8px; align-items: center; color: var(--muted); }
+  #inputRow.show { display: flex; }
+  #inputEl { flex: 1; min-width: 0; background: var(--edit); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; }
+  #send { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 6px 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot" aria-hidden="true"></span>Cronoff<small>Code runner &middot; online/offline</small></div>
+  <span class="by" title="Made by yehon106">by yehon106</span>
+  <select id="lang" aria-label="Language" title="Change language (renames the file extension)"><option value="" disabled hidden>Language</option></select>
+  <button id="run" disabled>Run</button>
+  <button id="stop" disabled>Stop</button>
+  <button id="download">Download</button>
+  <button id="rotate" title="Move the output panel">Output: Right</button>
+  <button id="reset">Reset</button>
+  <button id="installBtn" title="Get Cronoff as a real app for Windows, Mac or Linux, or add it to this browser">Get the app</button>
+  <button id="acctBtn" title="Log in (optional): save your tabs online" hidden>Log in</button>
+  <button id="gear" title="Editor settings" aria-label="Editor settings" aria-haspopup="true" aria-expanded="false" aria-controls="setPanel">&#9881;&#xFE0E;</button>
+  <span id="status">Loading Cronoff...</span>
+  <button id="retryBtn" hidden title="Try loading this language again">Try again</button>
+</header>
+<div id="setPanel" role="group" aria-label="Editor settings" hidden>
+  <label title="On: every tab can use the others. Python: import utils (utils.py). JavaScript and TypeScript: import / export or require(&quot;./utils.js&quot;). Lua: require(&quot;utils&quot;). Other tabs' files (text, json) can be opened too in Python. Off: each tab runs alone."><input type="checkbox" data-set="linkTabs"> Tabs work together (import each other)</label>
+  <button id="gameBtn" title="Adds 7 tabs: a complete little game (Star Dodger) built from several files that import each other. Run the game.js tab.">Add the example game (7 tabs)</button>
+  <label title="Typing ( [ { or a quote adds the closing one"><input type="checkbox" data-set="autoClose"> Auto-close brackets and quotes</label>
+  <label title="Off (default): Enter leaves the closers we added on the same line and starts a new line below. On: Enter deletes the closers we added."><input type="checkbox" data-set="enterRemoves"> Enter removes our closer</label>
+  <label title="Underline problems such as unmatched brackets and unclosed strings in red, with a message bar under the editor"><input type="checkbox" data-set="markers"> Red markers</label>
+  <label title="How many programs may run at the same time in different tabs. More runs need more memory; phones are held to 2."><span>Runs at once</span> <select id="maxRuns" aria-label="Runs at once"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+  <label title="Enter keeps the indent (and adds 4 after a line ending in : or an opening bracket). In Python, Enter on if/for/def/else... with no colon adds the colon. Backspace in leading spaces removes 4. Tab and Shift+Tab indent and un-indent."><input type="checkbox" data-set="autoIndent"> Auto-indent</label>
+  <label title="While you type, a list of suggestions appears (words from your file and other tabs, built-in names, what is inside a module after a dot, HTML tags). Tab or Enter after using the arrows picks one. Ctrl+Space opens it any time."><input type="checkbox" data-set="suggest"> Autocomplete suggestions</label>
+  <label title="When you finish a word that is a typo we are sure about (pritn, retrun, teh, recieve), it is fixed for you. Backspace right after puts back what you typed. Your own names are never touched."><input type="checkbox" data-set="autocorrect"> Auto-correct typos</label>
+  <label title="Type for, if, def, class... and press Tab to get the whole pattern with places to fill in (Tab moves between them)."><input type="checkbox" data-set="snippets"> Patterns (for, if, def...)</label>
+  <label title="Optional. Leave empty to use this site's own code server. To use the server on your own computer from this page, type its address, for example http://localhost:3000 (see the local server guide)."><span>Code server address</span> <input id="serverUrl" type="text" placeholder="(this site)" spellcheck="false" autocapitalize="off" style="width:150px"></label>
+  <a href="/about.html" target="_blank" rel="noopener" style="font-size:12px;color:var(--accent)">About Cronoff</a>
+  <div style="font-size:11px;opacity:.6">Editor build: autocorrect-keys</div>
+</div>
+<main id="main" data-layout="right">
+  <section id="editorSec">
+    <div class="tab" id="tabs" role="tablist"></div>
+    <div class="editor">
+      <div id="gutter" class="mono" aria-hidden="true"></div>
+      <div class="codewrap">
+        <pre id="hl" class="mono" aria-hidden="true"></pre>
+        <pre id="mk" class="mono" aria-hidden="true"></pre>
+        <textarea id="code" class="mono" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Type or paste your code here. Ctrl+Enter runs it." aria-label="Code (Ctrl+Enter to run)"></textarea>
+      </div>
+    </div>
+    <button id="probBar" hidden title="Click to jump to the problem"></button>
+  </section>
+  <div id="resizer" role="separator" aria-label="Drag to resize"></div>
+  <section id="outSec">
+    <div class="tab"><b>Output</b><button id="copyOut" title="Copy the output text">Copy</button><button id="clear">Clear</button></div>
+    <textarea id="stdinBox" rows="2" placeholder="Program input for this language (one line per input). It is sent when you press Run." aria-label="Program input"></textarea>
+    <div id="pvWrap"></div>
+    <div id="gfxWrap"><canvas id="gfx" width="640" height="480" tabindex="0" aria-label="Graphics window"></canvas></div>
+    <pre id="out" class="mono" aria-live="padius: 12px; padding: 20px 22px; max-width: min(92vw, 400px); width: 100%; }
   dialog::backdrop { background: rgba(0, 0, 0, .6); }
   dialog h2 { margin: 0 0 6px; font-size: 18px; }
   dialog p { margin: 6px 0; color: var(--muted); font-size: 13px; }
