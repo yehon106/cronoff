@@ -221,6 +221,7 @@
     <button id="download">Download</button>
     <button id="rotate" title="Move the output panel">Output: Right</button>
     <button id="reset">Reset</button>
+    <button id="resetAll" title="Delete every tab and start over with one empty main.py">Reset all</button>
     <button id="installBtn" title="Get Cronoff as a real app for Windows, Mac or Linux, or add it to this browser">Get the app</button>
     <button id="acctBtn" title="Log in (optional): save your tabs online" hidden>Log in</button>
     <button id="gear" title="Editor settings" aria-label="Editor settings" aria-haspopup="true" aria-expanded="false" aria-controls="setPanel">&#9881;&#xFE0E;</button>
@@ -533,21 +534,44 @@ async function pyoCheck(b) {
   } catch (e) { return "pyodide-lock.json: not valid JSON"; }
   return "";
 }
-// Loads from base b. Any asset failure (Emscripten exit(1) / abort) becomes a normal Error that includes what Python itself printed.
+// Fetches python_stdlib.zip ourselves and checks it really is the standard library. Pyodide swallows a bad stdlib
+// (it only logs it) and then dies with exit(1), so a bad copy is found here, with a reason, before Pyodide starts.
+// First the normal way; if that copy is bad, once more straight from the network (?nosw=1 skips the service worker).
+async function pyoStdlib(b) {
+  const why = [];
+  for (const q of ["", "?nosw=1"]) {
+    try {
+      const r = await fetch(b + "python_stdlib.zip" + q, { cache: "no-store" });
+      if (!r.ok) { why.push((q ? "network " : "") + "HTTP " + r.status); continue; }
+      const buf = await r.arrayBuffer(), u8 = new Uint8Array(buf);
+      if (u8.length < 1000000) { why.push((q ? "network " : "") + "only " + u8.length + " bytes"); continue; }
+      if (u8[0] !== 0x50 || u8[1] !== 0x4b || u8[2] !== 3 || u8[3] !== 4) { why.push((q ? "network " : "") + "not a zip file (" + u8.length + " bytes)"); continue; }
+      if (new TextDecoder("latin1").decode(u8).indexOf("encodings/__init__.py") < 0) { why.push((q ? "network " : "") + "zip has no standard library inside"); continue; }
+      if (q) { try { await caches.delete("cronoff-vendor-v2"); await caches.delete("cronoff-pyodide-" + PYO_VERSION + "-v2"); } catch (e) {} }   // the saved copy was bad: drop it
+      return { url: URL.createObjectURL(new Blob([buf], { type: "application/zip" })), bytes: u8.length };
+    } catch (e) { why.push((q ? "network " : "") + "fetch failed: " + String((e && e.message) || e).slice(0, 80)); }
+  }
+  throw new Error("python_stdlib.zip is bad (" + why.join("; ") + ")");
+}
+// Loads from base b. Any asset failure (Emscripten exit(1) / abort) becomes a normal Error that includes what Python / Pyodide reported.
 async function pyoLoad(b, mini) {
-  const said = [];
+  const said = [], std = await pyoStdlib(b);
   self.loadPyodide = undefined; self._createPyodideModule = undefined;   // a failed earlier attempt must not leak into this one
   importScripts(b + "pyodide.js");
   if (typeof self.loadPyodide !== "function") throw new Error("pyodide.js loaded but loadPyodide is missing");
-  const o = mini ? { indexURL: b } : { indexURL: b, lockFileURL: b + "pyodide-lock.json", stdLibURL: b + "python_stdlib.zip", checkAPIVersion: true };
-  o.stderr = (t) => { if (said.length < 8) said.push(String(t).slice(0, 160)); };
+  const o = mini ? { indexURL: b, stdLibURL: std.url } : { indexURL: b, lockFileURL: b + "pyodide-lock.json", stdLibURL: std.url, checkAPIVersion: true };
+  const note = (t) => { t = String(t).replace(/\s+/g, " ").trim(); if (t && said.length < 30 && said.indexOf(t) < 0) said.push(t.slice(0, 300)); };
+  o.stderr = note;
+  const ce = console.error;
+  console.error = (...a) => { note(a.map((x) => (x && x.message) || x).join(" ")); try { ce.apply(console, a); } catch (e) {} };   // Pyodide logs a failed stdlib install here
   try {
     return await self.loadPyodide(o);
   } catch (e) {
     const m = String((e && e.message) || e).split("\n")[0];
     const exited = (e && e.name === "ExitStatus") || /exit\(\d+\)|Program terminated|abort/i.test(m);
-    throw new Error((exited ? "Python " + PYO_VERSION + " files could not be loaded (" + m + ")" : m) + (said.length ? " | Python said: " + said.join(" / ") : ""));
-  }
+    const fatal = said.filter((x) => /error|fatal|cannot|no module|unable|failed/i.test(x));
+    throw new Error((exited ? "Python " + PYO_VERSION + " files could not be loaded (" + m + ")" : m) + (fatal.length ? " | Python said: " + fatal.slice(0, 4).join(" / ") : said.length ? " | Python said: " + said.slice(-3).join(" / ") : ""));
+  } finally { console.error = ce; }
 }
 function pyoEnv() {
   const n = self.navigator || {};
@@ -3860,6 +3884,19 @@ export function drawPickups(ctx) {
     const code = "";
     codeEl.value = code; refresh(); applyLayout();
     files[active].code = code; saveFiles();
+  });
+  // Reset all: every tab, its output and its run are removed; one empty main.py is left (the same state as a first visit).
+  $("resetAll").addEventListener("click", () => {
+    if (!confirm("Reset all?\n\nEvery tab and its code will be deleted and replaced by one empty main.py. This cannot be undone.")) return;
+    for (const f of files) {
+      stopRun(f.id, true);
+      delete bufs[f.id]; delete runErr[f.id]; delete tabMark[f.id];
+      if (previews[f.id]) { previews[f.id].remove(); delete previews[f.id]; }
+    }
+    files = [{ id: newFileId(), name: "main.py", code: DEFAULT_CODE }];
+    ours = []; lastText = DEFAULT_CODE;
+    switchTo(0);
+    clearOut(files[0].id);
   });
 
   /* ---------- smart editing: wiring for the edit engine ---------- */
