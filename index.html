@@ -121,6 +121,8 @@
   dialog p { margin: 6px 0; color: var(--muted); font-size: 13px; }
   dialog input[type=text], dialog input[type=password] { width: 100%; font: inherit; padding: 8px 10px; margin: 6px 0; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
   dialog [hidden] { display: none !important; }
+  #uiOk.danger { background: #e5484d; border-color: #e5484d; color: #fff; }
+  #uiTitle:empty { display: none; }
   dialog .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
   dialog .row button { flex: 1 1 auto; }
   dialog .primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
@@ -274,6 +276,12 @@
 </main>
 
 <noscript><main style="padding:24px;font-family:system-ui,sans-serif;color:#e3e8ef;background:#14171c"><h1>Cronoff - free online code runner</h1><p>Cronoff runs Python, JavaScript, TypeScript, SQL, Lua, Ruby and C/C++ in your browser and works offline. It needs JavaScript turned on.</p><p><a href="/about.html" style="color:#19b5c8">About Cronoff</a> &middot; <a href="/python-runner.html" style="color:#19b5c8">Python runner</a></p></main></noscript>
+<dialog id="uiDlg" aria-labelledby="uiTitle">
+  <h2 id="uiTitle"></h2>
+  <p id="uiText" style="white-space:pre-wrap;color:var(--ink);font-size:14px"></p>
+  <input id="uiInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" hidden>
+  <div class="row"><button id="uiNo"></button><button id="uiOk" class="primary"></button></div>
+</dialog>
 <dialog id="instDlg" aria-labelledby="instTitle">
   <h2 id="instTitle">Get Cronoff as an app</h2>
   <p>A real app: its own window and icon. Python, JavaScript, HTML, SQL, Lua, Ruby and C/C++ work with <b>no internet at all</b>, and Java, C#, Go, Rust and Kotlin run on your computer when you have them installed.</p>
@@ -2698,6 +2706,41 @@ export function drawPickups(ctx) {
     mkEl.scrollTop = codeEl.scrollTop; mkEl.scrollLeft = codeEl.scrollLeft;
   }
 
+  /* ---------- in-site popups (instead of the browser's own confirm / alert / prompt) ---------- */
+  let uiQ = Promise.resolve();
+  function uiDialog(o) {
+    const run = () => new Promise((res) => {
+      const d = $("uiDlg"), inp = $("uiInput"), ok = $("uiOk"), no = $("uiNo");
+      $("uiTitle").textContent = o.title || "";
+      $("uiText").textContent = o.text || "";
+      inp.hidden = !o.input; inp.value = ""; inp.placeholder = o.input || "";
+      ok.textContent = o.ok || "OK"; ok.className = "primary" + (o.danger ? " danger" : "");
+      no.textContent = o.cancel || "Cancel"; no.hidden = !o.cancel;
+      let done = false;
+      const finish = (yes) => {
+        if (done) return;
+        done = true;
+        ok.removeEventListener("click", onOk); no.removeEventListener("click", onNo);
+        d.removeEventListener("cancel", onEsc); d.removeEventListener("click", onBack); inp.removeEventListener("keydown", onKey);
+        if (d.open) d.close();
+        res({ ok: yes, value: inp.value });
+      };
+      const onOk = () => finish(true), onNo = () => finish(false);
+      const onEsc = (e) => { e.preventDefault(); finish(false); };
+      const onBack = (e) => { const r = d.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) finish(false); };
+      const onKey = (e) => { if (e.key === "Enter") { e.preventDefault(); finish(true); } };
+      ok.addEventListener("click", onOk); no.addEventListener("click", onNo);
+      d.addEventListener("cancel", onEsc); d.addEventListener("click", onBack); inp.addEventListener("keydown", onKey);
+      d.showModal();
+      (o.input ? inp : o.danger && o.cancel ? no : ok).focus();
+    });
+    uiQ = uiQ.then(run, run);
+    return uiQ;
+  }
+  const uiConfirm = (text, title, okLabel, danger) => uiDialog({ text, title, ok: okLabel || "OK", cancel: "Cancel", danger }).then((r) => r.ok);
+  const uiAlert = (text, title) => uiDialog({ text, title }).then(() => {});
+  const uiPrompt = (text, title, hint) => uiDialog({ text, title, input: hint || "Type here", cancel: "Cancel" }).then((r) => (r.ok ? r.value : null));
+
   const FKEY = "pyro-files";
   let fileSeq = 0;
   function newFileId() { return "f" + Date.now().toString(36) + (fileSeq++).toString(36) + Math.random().toString(36).slice(2, 6); }
@@ -3194,9 +3237,12 @@ export function drawPickups(ctx) {
     switchTo(files.length - 1);
     codeEl.focus();
   }
-  function closeTab(i) {
+  async function closeTab(i) {
     if (files.length < 2) return;
-    if (!confirm('Close "' + files[i].name + '"? Its code will be deleted.')) return;
+    const f = files[i];
+    if (!(await uiConfirm('"' + f.name + '" and its code will be deleted.', "Close this tab?", "Close tab", true))) return;
+    i = files.indexOf(f);
+    if (i < 0 || files.length < 2) return;
     stopRun(files[i].id, true);
     delete bufs[files[i].id]; delete runErr[files[i].id];
     if (previews[files[i].id]) { previews[files[i].id].remove(); delete previews[files[i].id]; }
@@ -3802,7 +3848,7 @@ export function drawPickups(ctx) {
       const j = await r.json().catch(() => ({}));
       clearOut(id);
       if (r.status === 401) {
-        const c = prompt("This code server needs an access code:");
+        const c = await uiPrompt("This code server needs an access code.", "Access code", "Access code");
         if (c) { localStorage.setItem("cronoff-access", c); write("Saved. Press Run again.\n", "info", id); }
         else write("Access code needed.\n", "err", id);
       } else if (!r.ok) {
@@ -3886,8 +3932,8 @@ export function drawPickups(ctx) {
     files[active].code = code; saveFiles();
   });
   // Reset all: every tab, its output and its run are removed; one empty main.py is left (the same state as a first visit).
-  $("resetAll").addEventListener("click", () => {
-    if (!confirm("Reset all?\n\nEvery tab and its code will be deleted and replaced by one empty main.py. This cannot be undone.")) return;
+  $("resetAll").addEventListener("click", async () => {
+    if (!(await uiConfirm("Every tab and its code will be deleted and replaced by one empty main.py. This cannot be undone.", "Reset all?", "Reset all", true))) return;
     for (const f of files) {
       stopRun(f.id, true);
       delete bufs[f.id]; delete runErr[f.id]; delete tabMark[f.id];
@@ -5188,8 +5234,8 @@ box-shadow|Shadow
   $("gameBtn").addEventListener("click", () => {
     const parts = [...document.querySelectorAll("script[data-game]")];
     const clash = parts.map((el) => el.dataset.game).filter((n) => files.some((f) => f.name.toLowerCase() === n.toLowerCase()));
-    if (clash.length) { alert("These tabs already exist: " + clash.join(", ") + ". Rename or close them first, because the game files import each other by name."); return; }
-    if (files.length + parts.length > MAX_TABS) { alert("The example game needs " + parts.length + " tabs and there is room for " + (MAX_TABS - files.length) + ". Close some tabs first."); return; }
+    if (clash.length) { uiAlert("These tabs already exist: " + clash.join(", ") + ". Rename or close them first, because the game files import each other by name.", "Cannot add the game"); return; }
+    if (files.length + parts.length > MAX_TABS) { uiAlert("The example game needs " + parts.length + " tabs and there is room for " + (MAX_TABS - files.length) + ". Close some tabs first.", "Not enough tabs"); return; }
     for (const el of parts) files.push({ id: newFileId(), name: el.dataset.game, code: el.textContent.replace(/^\n/, "") });
     settings.linkTabs = true;
     setPanel.querySelectorAll("input[data-set]").forEach((cb) => { cb.checked = !!settings[cb.dataset.set]; });
@@ -5355,7 +5401,7 @@ box-shadow|Shadow
   serverInput.value = settings.serverUrl || "";
   serverInput.addEventListener("change", () => {
     let v = serverInput.value.trim().replace(/\/+$/, "");
-    if (v && !/^https?:\/\/[^\s\/]+(:\d+)?$/.test(v)) { serverInput.value = ""; v = ""; alert("Type the address like this: http://localhost:3000"); }
+    if (v && !/^https?:\/\/[^\s\/]+(:\d+)?$/.test(v)) { serverInput.value = ""; v = ""; uiAlert("Type the address like this: http://localhost:3000", "Wrong address"); }
     settings.serverUrl = v;
     try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch {}
     checkServer();
@@ -5469,7 +5515,7 @@ box-shadow|Shadow
     if (!r || !r.ok) { say((r && r.j.error) || "Could not load.");  return; }
     const got = r.j.files || [];
     if (!got.length) { say("You have not saved any tabs yet."); return; }
-    if (!confirm("Replace your " + files.length + " open tab" + (files.length === 1 ? "" : "s") + " with the " + got.length + " saved tab" + (got.length === 1 ? "" : "s") + "?")) { say(""); return; }
+    if (!(await uiConfirm("Your " + files.length + " open tab" + (files.length === 1 ? "" : "s") + " will be replaced by the " + got.length + " saved tab" + (got.length === 1 ? "" : "s") + ".", "Replace your tabs?", "Replace", true))) { say(""); return; }
     for (const id of Object.keys(runs)) stopRun(id, true);
     files = got.slice(0, MAX_TABS).map((f) => ({ id: newFileId(), name: String(f.name), code: String(f.code) }));
     active = 0;
