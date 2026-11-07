@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Cronoff - Free Online Python Runner &amp; Code Editor (Works Offline)</title>
 <meta name="description" content="Cronoff runs Python, JavaScript, TypeScript, SQL, Lua, Ruby and C/C++ right in your browser. A free online code runner that also works offline. No sign-up needed.">
 <meta name="keywords" content="cronoff, python runner, run python online, online python compiler, code runner, online code editor, offline code editor, javascript runner, typescript runner, sql runner, lua runner, ruby runner, c++ runner">
@@ -19,6 +19,10 @@
 </script>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#14171c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Cronoff">
 <meta name="author" content="yehon106">
 <!-- Cronoff: made by yehon106 -->
 <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
@@ -150,6 +154,60 @@
   #inputRow.show { display: flex; }
   #inputEl { flex: 1; min-width: 0; background: var(--edit); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; }
   #send { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 6px 14px; }
+  /* ---------- phones and tablets ---------- */
+  .hbtns { display: contents; }
+  #keybar, #pad { display: none; }
+  html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+  button, select, label, .ftab, #resizer { touch-action: manipulation; }
+  #gfx { touch-action: none; }
+  #keybar { flex: 0 0 auto; gap: 4px; padding: 5px 6px; overflow-x: auto; scrollbar-width: none; background: var(--bar); border-top: 1px solid var(--line); }
+  #keybar::-webkit-scrollbar { display: none; }
+  #keybar button { flex: 0 0 auto; min-width: 40px; padding: 8px 10px; font: 600 15px ui-monospace, Menlo, Consolas, monospace; }
+  #pad { flex: 0 0 auto; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 8px; background: var(--bar); border-bottom: 1px solid var(--line); }
+  #pad button { min-width: 52px; min-height: 48px; padding: 6px 10px; font-size: 18px; user-select: none; -webkit-user-select: none; }
+  #pad button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  @media (pointer: coarse) {
+    html, body { overflow: hidden; }
+    body { position: fixed; left: 0; top: var(--vvt, 0px); width: 100%; height: var(--vvh, 100dvh); padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+    body.kb-open #keybar { display: flex; }
+    .mono { font-size: 16px; }
+    #gutter { width: 38px; padding-right: 6px; }
+    #hl, #mk, #code { padding-left: 10px; padding-right: 10px; }
+    button, #lang { min-height: 40px; }
+    #clear, #copyOut { min-height: 32px; padding: 4px 12px; }
+    .ftab { padding: 10px 12px; }
+    .ftab .x { padding: 6px 10px; }
+    #tabs #newTab { padding: 6px 14px; }
+    #lang, #inputEl, #stdinBox, #fnameInput, #setPanel select, #setPanel input:not([type=checkbox]), dialog input { font-size: 16px; }
+    #setPanel label { padding: 4px 0; }
+    #setPanel input[type=checkbox] { width: 20px; height: 20px; }
+    #resizer::after { content: ""; position: absolute; }
+    main[data-layout="right"] #resizer::after, main[data-layout="left"] #resizer::after { inset: 0 -10px; }
+    main[data-layout="top"] #resizer::after, main[data-layout="bottom"] #resizer::after { inset: -10px 0; }
+    #resizer { position: relative; z-index: 2; }
+  }
+  @media (max-width: 720px), (pointer: coarse) and (max-height: 500px) {
+    header { gap: 6px; padding: 6px 8px; }
+    .brand { margin: 0; font-size: 0; gap: 0; }
+    .dot { margin-right: 0; }
+    .by, .brand small { display: none; }
+    #lang { flex: 0 1 auto; max-width: 40vw; }
+    #run { padding: 7px 16px; }
+    #status { order: 1; flex: 1 1 0; min-width: 0; margin-left: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+    #retryBtn { order: 2; }
+    .hbtns { display: flex; order: 3; flex: 1 1 100%; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+    .hbtns::-webkit-scrollbar { display: none; }
+    .hbtns > button { flex: 0 0 auto; white-space: nowrap; }
+    #setPanel { max-width: calc(100vw - 16px); max-height: 75dvh; overflow-y: auto; }
+    #setPanel label { white-space: normal; }
+    #outSec .tab, #editorSec .tab { padding-left: 8px; padding-right: 8px; }
+  }
+  @media (max-height: 500px) and (pointer: coarse) {
+    header { flex-wrap: nowrap; }
+    .hbtns { order: 2; flex: 1 1 0; min-width: 0; }
+    #status { order: 3; flex: 0 0 auto; max-width: 110px; }
+    #retryBtn { order: 4; }
+  }
 </style>
 </head>
 <body>
@@ -159,12 +217,14 @@
   <select id="lang" aria-label="Language" title="Change language (renames the file extension)"><option value="" disabled hidden>Language</option></select>
   <button id="run" disabled>Run</button>
   <button id="stop" disabled>Stop</button>
-  <button id="download">Download</button>
-  <button id="rotate" title="Move the output panel">Output: Right</button>
-  <button id="reset">Reset</button>
-  <button id="installBtn" title="Get Cronoff as a real app for Windows, Mac or Linux, or add it to this browser">Get the app</button>
-  <button id="acctBtn" title="Log in (optional): save your tabs online" hidden>Log in</button>
-  <button id="gear" title="Editor settings" aria-label="Editor settings" aria-haspopup="true" aria-expanded="false" aria-controls="setPanel">&#9881;&#xFE0E;</button>
+  <div class="hbtns">
+    <button id="download">Download</button>
+    <button id="rotate" title="Move the output panel">Output: Right</button>
+    <button id="reset">Reset</button>
+    <button id="installBtn" title="Get Cronoff as a real app for Windows, Mac or Linux, or add it to this browser">Get the app</button>
+    <button id="acctBtn" title="Log in (optional): save your tabs online" hidden>Log in</button>
+    <button id="gear" title="Editor settings" aria-label="Editor settings" aria-haspopup="true" aria-expanded="false" aria-controls="setPanel">&#9881;&#xFE0E;</button>
+  </div>
   <span id="status">Loading Cronoff...</span>
   <button id="retryBtn" hidden title="Try loading this language again">Try again</button>
 </header>
@@ -191,105 +251,15 @@
       <div class="codewrap">
         <pre id="hl" class="mono" aria-hidden="true"></pre>
         <pre id="mk" class="mono" aria-hidden="true"></pre>
-        <textarea id="code" class="mono" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Type or paste your code here. Ctrl+Enter runs it." aria-label="Code (Ctrl+Enter to run)"></textarea>
+        <textarea id="code" class="mono" wrap="off" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" enterkeyhint="enter" placeholder="Type or paste your code here. Ctrl+Enter runs it." aria-label="Code (Ctrl+Enter to run)"></textarea>
       </div>
     </div>
     <button id="probBar" hidden title="Click to jump to the problem"></button>
+    <div id="keybar" role="toolbar" aria-label="Quick keys"></div>
   </section>
   <div id="resizer" role="separator" aria-label="Drag to resize"></div>
   <section id="outSec">
     <div class="tab"><b>Output</b><button id="copyOut" title="Copy the output text">Copy</button><button id="clear">Clear</button></div>
-    <textarea id="stdinBox" rows="2" placeholder="Program input for this language (one line per input). It is sent when you press Run." aria-label="Program input"></textarea>
-    <div id="pvWrap"></div>
-    <div id="gfxWrap"><canvas id="gfx" width="640" height="480" tabindex="0" aria-label="Graphics window"></canvas></div>
-    <pre id="out" class="mono" aria-live="padius: 12px; padding: 20px 22px; max-width: min(92vw, 400px); width: 100%; }
-  dialog::backdrop { background: rgba(0, 0, 0, .6); }
-  dialog h2 { margin: 0 0 6px; font-size: 18px; }
-  dialog p { margin: 6px 0; color: var(--muted); font-size: 13px; }
-  dialog input[type=text], dialog input[type=password] { width: 100%; font: inherit; padding: 8px 10px; margin: 6px 0; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
-  dialog [hidden] { display: none !important; }
-  dialog .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-  dialog .row button { flex: 1 1 auto; }
-  dialog .primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  dialog .seg button { flex: 1; border-radius: 6px; }
-  dialog .seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  #acctMsg { min-height: 1.3em; font-size: 13px; color: var(--err); margin-top: 6px; }
-  #acctMsg.ok { color: #68d391; }
-  #setPanel button { font: inherit; font-size: 12px; padding: 4px 8px; text-align: left; }
-  #setPanel select { font: inherit; background: var(--edit); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
-  #stdinBox { display: none; width: 100%; box-sizing: border-box; resize: vertical; font: inherit; font-size: 13px; padding: 6px 10px; color: var(--ink); background: var(--edit); border: 0; border-bottom: 1px solid var(--line); outline: none; }
-  #ac { position: fixed; z-index: 70; min-width: 230px; max-width: min(92vw, 400px); background: var(--bar); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 10px 28px rgba(0, 0, 0, .5); font: 13px/1.3 ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; overflow: hidden; }
-  #ac[hidden] { display: none; }
-  #ac ul { list-style: none; margin: 0; padding: 4px; max-height: 216px; overflow-y: auto; }
-  #ac li { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
-  #ac li.sel { background: #2b3a50; }
-  #ac .ic { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 4px; text-align: center; font: 700 11px/18px system-ui, sans-serif; color: #0e1218; background: var(--muted); }
-  #ac .k-k { background: #c792ea; } #ac .k-f, #ac .k-m { background: #82aaff; } #ac .k-v, #ac .k-p { background: #7fdbca; } #ac .k-c { background: #ffcb6b; }
-  #ac .k-s { background: #f78c6c; } #ac .k-t { background: #f07178; } #ac .k-a { background: #c3e88d; } #ac .k-M { background: #89ddff; }
-  #ac .lab { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #ac .lab b { color: var(--accent); font-weight: 700; }
-  #ac .det { flex: 0 0 auto; color: var(--muted); }
-  #ac .acdoc { border-top: 1px solid var(--line); padding: 6px 10px; color: var(--muted); font: 12px/1.4 system-ui, -apple-system, sans-serif; max-height: 4.2em; overflow: hidden; }
-  #pvWrap { display: none; flex: 0 0 auto; height: min(55vh, 420px); min-height: 140px; max-height: 80%; resize: vertical; overflow: hidden; background: #fff; border-bottom: 1px solid var(--line); }
-  #pvWrap iframe { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
-  #code::placeholder { color: var(--muted); opacity: .7; }
-  #gfxWrap { display: none; flex: 0 0 auto; max-height: 75%; overflow: auto; background: #000; border-bottom: 1px solid var(--line); }
-  #gfx { display: block; max-width: 100%; height: auto; margin: 0 auto; outline: none; background: #000; }
-  #out { flex: 1; min-width: 0; margin: 0; padding: 14px; background: var(--out); overflow-x: hidden; overflow-y: auto; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
-  #out .err { color: var(--err); } #out .info { color: var(--info); }
-  #inputRow { display: none; background: var(--out); border-top: 1px solid var(--line); padding: 8px 14px; gap: 8px; align-items: center; color: var(--muted); }
-  #inputRow.show { display: flex; }
-  #inputEl { flex: 1; min-width: 0; background: var(--edit); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; }
-  #send { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 6px 14px; }
-</style>
-</head>
-<body>
-<header>
-  <div class="brand"><span class="dot" aria-hidden="true"></span>Cronoff<small>Code runner &middot; online/offline</small></div>
-  <span class="by" title="Made by yehon106">by yehon106</span>
-  <select id="lang" aria-label="Language" title="Change language (renames the file extension)"><option value="" disabled hidden>Language</option></select>
-  <button id="run" disabled>Run</button>
-  <button id="stop" disabled>Stop</button>
-  <button id="download">Download</button>
-  <button id="rotate" title="Move the output panel">Output: Right</button>
-  <button id="reset">Reset</button>
-  <button id="installBtn" title="Get Cronoff as a real app for Windows, Mac or Linux, or add it to this browser">Get the app</button>
-  <button id="acctBtn" title="Log in (optional): save your tabs online" hidden>Log in</button>
-  <button id="gear" title="Editor settings" aria-label="Editor settings" aria-haspopup="true" aria-expanded="false" aria-controls="setPanel">&#9881;&#xFE0E;</button>
-  <span id="status">Loading Cronoff...</span>
-  <button id="retryBtn" hidden title="Try loading this language again">Try again</button>
-</header>
-<div id="setPanel" role="group" aria-label="Editor settings" hidden>
-  <label title="On: every tab can use the others. Python: import utils (utils.py). JavaScript and TypeScript: import / export or require(&quot;./utils.js&quot;). Lua: require(&quot;utils&quot;). Other tabs' files (text, json) can be opened too in Python. Off: each tab runs alone."><input type="checkbox" data-set="linkTabs"> Tabs work together (import each other)</label>
-  <button id="gameBtn" title="Adds 7 tabs: a complete little game (Star Dodger) built from several files that import each other. Run the game.js tab.">Add the example game (7 tabs)</button>
-  <label title="Typing ( [ { or a quote adds the closing one"><input type="checkbox" data-set="autoClose"> Auto-close brackets and quotes</label>
-  <label title="Off (default): Enter leaves the closers we added on the same line and starts a new line below. On: Enter deletes the closers we added."><input type="checkbox" data-set="enterRemoves"> Enter removes our closer</label>
-  <label title="Underline problems such as unmatched brackets and unclosed strings in red, with a message bar under the editor"><input type="checkbox" data-set="markers"> Red markers</label>
-  <label title="How many programs may run at the same time in different tabs. More runs need more memory; phones are held to 2."><span>Runs at once</span> <select id="maxRuns" aria-label="Runs at once"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
-  <label title="Enter keeps the indent (and adds 4 after a line ending in : or an opening bracket). In Python, Enter on if/for/def/else... with no colon adds the colon. Backspace in leading spaces removes 4. Tab and Shift+Tab indent and un-indent."><input type="checkbox" data-set="autoIndent"> Auto-indent</label>
-  <label title="While you type, a list of suggestions appears (words from your file and other tabs, built-in names, what is inside a module after a dot, HTML tags). Tab or Enter after using the arrows picks one. Ctrl+Space opens it any time."><input type="checkbox" data-set="suggest"> Autocomplete suggestions</label>
-  <label title="When you finish a word that is a typo we are sure about (pritn, retrun, teh, recieve), it is fixed for you. Backspace right after puts back what you typed. Your own names are never touched."><input type="checkbox" data-set="autocorrect"> Auto-correct typos</label>
-  <label title="Type for, if, def, class... and press Tab to get the whole pattern with places to fill in (Tab moves between them)."><input type="checkbox" data-set="snippets"> Patterns (for, if, def...)</label>
-  <label title="Optional. Leave empty to use this site's own code server. To use the server on your own computer from this page, type its address, for example http://localhost:3000 (see the local server guide)."><span>Code server address</span> <input id="serverUrl" type="text" placeholder="(this site)" spellcheck="false" autocapitalize="off" style="width:150px"></label>
-  <a href="/about.html" target="_blank" rel="noopener" style="font-size:12px;color:var(--accent)">About Cronoff</a>
-  <div style="font-size:11px;opacity:.6">Editor build: autocorrect-keys</div>
-</div>
-<main id="main" data-layout="right">
-  <section id="editorSec">
-    <div class="tab" id="tabs" role="tablist"></div>
-    <div class="editor">
-      <div id="gutter" class="mono" aria-hidden="true"></div>
-      <div class="codewrap">
-        <pre id="hl" class="mono" aria-hidden="true"></pre>
-        <pre id="mk" class="mono" aria-hidden="true"></pre>
-        <textarea id="code" class="mono" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Type or paste your code here. Ctrl+Enter runs it." aria-label="Code (Ctrl+Enter to run)"></textarea>
-      </div>
-    </div>
-    <button id="probBar" hidden title="Click to jump to the problem"></button>
-  </section>
-  <div id="resizer" role="separator" aria-label="Drag to resize"></div>
-  <section id="outSec">
-    <div class="tab"><b>Output</b><button id="clear">Clear</button></div>
     <textarea id="stdinBox" rows="2" placeholder="Program input for this language (one line per input). It is sent when you press Run." aria-label="Program input"></textarea>
     <div id="pvWrap"></div>
     <div id="gfxWrap"><canvas id="gfx" width="640" height="480" tabindex="0" aria-label="Graphics window"></canvas></div>
@@ -563,18 +533,25 @@ async function pyoCheck(b) {
   } catch (e) { return "pyodide-lock.json: not valid JSON"; }
   return "";
 }
-// Loads from base b. Any asset failure (Emscripten exit(1) / abort) becomes a normal Error with a clear message.
-async function pyoLoad(b) {
+// Loads from base b. Any asset failure (Emscripten exit(1) / abort) becomes a normal Error that includes what Python itself printed.
+async function pyoLoad(b, mini) {
+  const said = [];
   self.loadPyodide = undefined; self._createPyodideModule = undefined;   // a failed earlier attempt must not leak into this one
   importScripts(b + "pyodide.js");
   if (typeof self.loadPyodide !== "function") throw new Error("pyodide.js loaded but loadPyodide is missing");
+  const o = mini ? { indexURL: b } : { indexURL: b, lockFileURL: b + "pyodide-lock.json", stdLibURL: b + "python_stdlib.zip", checkAPIVersion: true };
+  o.stderr = (t) => { if (said.length < 8) said.push(String(t).slice(0, 160)); };
   try {
-    return await self.loadPyodide({ indexURL: b, lockFileURL: b + "pyodide-lock.json", stdLibURL: b + "python_stdlib.zip", checkAPIVersion: true });
+    return await self.loadPyodide(o);
   } catch (e) {
     const m = String((e && e.message) || e).split("\n")[0];
-    if ((e && e.name === "ExitStatus") || /exit\(\d+\)|Program terminated|abort/i.test(m)) throw new Error("Python " + PYO_VERSION + " files could not be loaded (" + m + ")");
-    throw new Error(m);
+    const exited = (e && e.name === "ExitStatus") || /exit\(\d+\)|Program terminated|abort/i.test(m);
+    throw new Error((exited ? "Python " + PYO_VERSION + " files could not be loaded (" + m + ")" : m) + (said.length ? " | Python said: " + said.join(" / ") : ""));
   }
+}
+function pyoEnv() {
+  const n = self.navigator || {};
+  return "isolated=" + self.crossOriginIsolated + ", wasm=" + (typeof WebAssembly === "object") + ", mem=" + (n.deviceMemory || "?") + "GB, cores=" + (n.hardwareConcurrency || "?") + ", " + String(n.userAgent || "").slice(0, 120);
 }
 async function pyoStart() {
   const notes = [];
@@ -582,10 +559,12 @@ async function pyoStart() {
     const where = b.indexOf("/vendor/") >= 0 ? "this site" : "CDN";
     const bad = await pyoCheck(b);
     if (bad) { notes.push(where + ": " + bad); continue; }
-    try { const py = await pyoLoad(b); RUNTIME_SRC = where === "CDN" ? "the internet (CDN)" : "this site"; return py; }
-    catch (e) { notes.push(where + ": " + String((e && e.message) || e).split("\n")[0]); }
+    for (const mini of [false, true]) {   // second try: the plainest possible options
+      try { const py = await pyoLoad(b, mini); RUNTIME_SRC = where === "CDN" ? "the internet (CDN)" : "this site"; return py; }
+      catch (e) { notes.push(where + (mini ? " (plain)" : "") + ": " + String((e && e.message) || e).split("\n")[0]); }
+    }
   }
-  throw new Error("Python " + PYO_VERSION + " not available (" + notes.join("; ") + ")\nIf you run this site: GitHub > Actions > Cronoff tasks > fetch-language-files (see SETUP-RUNTIMES.md).");
+  throw new Error("Python " + PYO_VERSION + " not available\n" + notes.map((x) => "- " + x).join("\n") + "\nEnv: " + pyoEnv() + "\nIf you run this site: GitHub > Actions > Cronoff tasks > fetch-language-files (see SETUP-RUNTIMES.md).");
 }
 const LANG = {
   async init() {
@@ -3865,6 +3844,18 @@ export function drawPickups(ctx) {
   $("send").addEventListener("click", send);
   inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); send(); } });
   $("clear").addEventListener("click", () => clearOut(tid()));
+  $("copyOut").addEventListener("click", async () => {
+    const btn = $("copyOut"), text = outEl.innerText.replace(/\n+$/, "");
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+      const t = document.createElement("textarea");
+      t.value = text; t.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(t); t.select();
+      try { ok = document.execCommand("copy"); } catch (x) {}
+      t.remove();
+    }
+    btn.textContent = ok ? "Copied" : "Copy failed";
+    setTimeout(() => { btn.textContent = "Copy"; }, 1200);
+  });
   $("reset").addEventListener("click", () => {
     const code = "";
     codeEl.value = code; refresh(); applyLayout();
@@ -5200,6 +5191,120 @@ box-shadow|Shadow
       codeEl.dispatchEvent(new Event("input"));
     }
   });
+
+  /* ---------- phones: viewport fit, soft-keyboard typing, quick keys, touch in game windows ---------- */
+  const coarse = window.matchMedia("(pointer: coarse)");
+  // 1. Keep the page exactly as big as the visible area (the on-screen keyboard shrinks it).
+  if (window.visualViewport) {
+    let vvT = 0;
+    const fit = () => {
+      cancelAnimationFrame(vvT);
+      vvT = requestAnimationFrame(() => {
+        const v = window.visualViewport, root = document.documentElement.style;
+        root.setProperty("--vvh", Math.round(v.height) + "px");
+        root.setProperty("--vvt", Math.round(v.offsetTop) + "px");
+        if (coarse.matches) { window.scrollTo(0, 0); window.dispatchEvent(new Event("resize")); }
+      });
+    };
+    window.visualViewport.addEventListener("resize", fit);
+    window.visualViewport.addEventListener("scroll", fit);
+    fit();
+  }
+  // 2. Soft keyboards send characters as "Unidentified" key presses, so auto-close, auto-indent and autocorrect never saw them.
+  //    Replay such input as real keys; if the editor handles the key, the keyboard's own edit is cancelled.
+  let lastKd = { t: 0, real: false, used: true }, replaying = false;
+  codeEl.addEventListener("keydown", (e) => {
+    if (!e.isTrusted) return;
+    const k = lastKd = { t: performance.now(), real: e.key !== "Unidentified" && e.keyCode !== 229, used: false };
+    setTimeout(() => { if (e.defaultPrevented) k.used = true; }, 0);       // the editor took this key itself: no edit follows
+  }, true);
+  function replay(key, init) {
+    const ev = new KeyboardEvent("keydown", Object.assign({ key, bubbles: true, cancelable: true }, init || {}));
+    replaying = true;
+    try { codeEl.dispatchEvent(ev); } finally { replaying = false; }
+    return ev.defaultPrevented;
+  }
+  codeEl.addEventListener("beforeinput", (e) => {
+    if (engineBusy || replaying || e.isComposing || !e.cancelable) return;
+    if (lastKd.real && !lastKd.used && performance.now() - lastKd.t < 100) { lastKd.used = true; return; }   // a real key: the keydown handlers already ran
+    let key = null;
+    if (e.inputType === "insertText" && e.data && e.data.length === 1) key = e.data;
+    else if (e.inputType === "insertLineBreak" || e.inputType === "insertParagraph") key = "Enter";
+    else if (e.inputType === "deleteContentBackward" && codeEl.selectionStart === codeEl.selectionEnd) key = "Backspace";
+    if (key && replay(key)) e.preventDefault();
+  });
+  // 3. Quick keys above the keyboard: phones have no Tab key and symbols are two taps away.
+  function typeSym(s) {
+    codeEl.focus();
+    if (replay(s)) return;
+    replaying = true;
+    try { document.execCommand("insertText", false, s); } finally { replaying = false; }
+  }
+  const moveCaret = (d) => { const p = Math.max(0, Math.min(codeEl.value.length, codeEl.selectionStart + d)); codeEl.focus(); codeEl.setSelectionRange(p, p); };
+  const QUICK = [
+    ["Tab", "Indent", () => { codeEl.focus(); replay("Tab"); }],
+    ["\u21E4", "Unindent", () => { codeEl.focus(); replay("Tab", { shiftKey: true }); }],
+    ["\u25C0", "Cursor left", () => moveCaret(-1)],
+    ["\u25B6", "Cursor right", () => moveCaret(1)],
+    ["\u21B6", "Undo", () => { codeEl.focus(); document.execCommand("undo"); }],
+    ["\u21B7", "Redo", () => { codeEl.focus(); document.execCommand("redo"); }],
+  ].concat("( ) [ ] { } \" ' : = # _ ; , . + - * / < > & | ! ? \\ @ $ % ^ ~".split(" ").map((c) => [c, c, () => typeSym(c)]))
+   .concat([["\u2304", "Hide keyboard", () => codeEl.blur()]]);
+  for (const [label, title, fn] of QUICK) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label; b.title = title; b.setAttribute("aria-label", title);
+    b.addEventListener("mousedown", (e) => e.preventDefault());       // keep the keyboard open
+    b.addEventListener("pointerdown", (e) => e.preventDefault());
+    b.addEventListener("click", fn);
+    $("keybar").appendChild(b);
+  }
+  // Turning the phone sideways puts the output beside the code (and back again), like a split screen.
+  let wasLand = innerWidth > innerHeight * 1.2;
+  window.addEventListener("resize", () => {
+    if (!coarse.matches) return;
+    const land = innerWidth > innerHeight * 1.2;
+    if (land === wasLand) return;
+    wasLand = land;
+    if (land && (layout === "bottom" || layout === "top")) layout = "right";
+    else if (!land && (layout === "right" || layout === "left")) layout = "bottom";
+    applyLayout();
+  });
+  codeEl.addEventListener("focus", () => { if (coarse.matches) document.body.classList.add("kb-open"); });
+  codeEl.addEventListener("blur", () => document.body.classList.remove("kb-open"));
+  // 4. Game windows: a finger drag acts like a mouse drag, and an arrow pad stands in for the keyboard.
+  const PADKEYS = [["\u25C0", "ArrowLeft", "ArrowLeft", 37], ["\u25B2", "ArrowUp", "ArrowUp", 38], ["\u25BC", "ArrowDown", "ArrowDown", 40], ["\u25B6", "ArrowRight", "ArrowRight", 39], ["Space", " ", "Space", 32], ["Enter", "Enter", "Enter", 13]];
+  const padEl = document.createElement("div");
+  padEl.id = "pad"; padEl.setAttribute("aria-label", "Game keys");
+  gfxWrap.after(padEl);
+  function padKey(type, k) {
+    const ev = new KeyboardEvent(type, { key: k[1], code: k[2], keyCode: k[3], which: k[3], bubbles: true, cancelable: true });
+    if (ev.keyCode !== k[3]) { try { Object.defineProperty(ev, "keyCode", { value: k[3] }); Object.defineProperty(ev, "which", { value: k[3] }); } catch {} }
+    gfxWrap.dispatchEvent(ev);
+  }
+  for (const k of PADKEYS) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = k[0]; b.setAttribute("aria-label", k[1] === " " ? "Space" : k[1]);
+    const up = () => { if (b.classList.contains("on")) { b.classList.remove("on"); padKey("keyup", k); } };
+    b.addEventListener("mousedown", (e) => e.preventDefault());
+    b.addEventListener("pointerdown", (e) => { e.preventDefault(); gfxEl.focus({ preventScroll: true }); b.setPointerCapture(e.pointerId); if (!b.classList.contains("on")) { b.classList.add("on"); padKey("keydown", k); } });
+    b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("lostpointercapture", up);
+    b.addEventListener("contextmenu", (e) => e.preventDefault());
+    padEl.appendChild(b);
+  }
+  const padSync = () => { padEl.style.display = coarse.matches && gfxWrap.style.display === "block" ? "flex" : "none"; };
+  new MutationObserver(padSync).observe(gfxWrap, { attributes: true, attributeFilter: ["style"] });
+  if (coarse.addEventListener) coarse.addEventListener("change", padSync);
+  padSync();
+  { const map = { pointerdown: "mousedown", pointermove: "mousemove", pointerup: "mouseup" };
+    for (const pt of Object.keys(map)) gfxWrap.addEventListener(pt, (e) => {
+      if (e.pointerType === "mouse" || !gRt() || e.target !== gfxEl) return;
+      if (pt === "pointermove" && !e.buttons) return;
+      if (pt === "pointerdown") { e.preventDefault(); gfxEl.focus({ preventScroll: true }); }
+      const p = gpos(e), r = gRt(), btns = pt === "pointerup" ? 0 : 1;
+      if (r && r.gi32) { r.gi32[0] = p.x; r.gi32[1] = p.y; r.gi32[2] = btns; }
+      sendEv({ type: map[pt], x: p.x, y: p.y, offsetX: p.x, offsetY: p.y, clientX: p.x, clientY: p.y, button: 0, buttons: btns });
+    });
+  }
 
   syncLang();
   function checkServer() {
