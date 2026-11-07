@@ -1,5 +1,5 @@
 /* Cronoff (made by yehon106) service worker: offline support + COOP/COEP headers (needed for SharedArrayBuffer) */
-const APP_CACHE = "cronoff-app-v4";
+const APP_CACHE = "cronoff-app-v5";
 const PYO_VERSION = "0.26.4";   // pinned: same as PYODIDE in local-server/get-vendor.js and PYODIDE_VERSION in index.html
 // New cache names on purpose: they drop any broken Pyodide copy an older worker may have saved.
 const PYO_CACHE = "cronoff-pyodide-" + PYO_VERSION + "-v2";
