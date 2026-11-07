@@ -1,5 +1,5 @@
 /* Cronoff (made by yehon106) service worker: offline support + COOP/COEP headers (needed for SharedArrayBuffer) */
-const APP_CACHE = "cronoff-app-v5";
+const APP_CACHE = "cronoff-app-v6";
 const PYO_VERSION = "0.26.4";   // pinned: same as PYODIDE in local-server/get-vendor.js and PYODIDE_VERSION in index.html
 // New cache names on purpose: they drop any broken Pyodide copy an older worker may have saved.
 const PYO_CACHE = "cronoff-pyodide-" + PYO_VERSION + "-v2";
@@ -150,6 +150,7 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET" || req.headers.has("range")) return;
   const url = new URL(req.url);
+  if (url.searchParams.has("nosw")) return;     // asked to bypass the service worker (used to double-check Pyodide files)
   if (url.origin === self.location.origin) {
     // /api/ is never cached: log in state, saved tabs and counters must always come from the server.
     if (url.pathname === "/sw.js" || url.pathname.startsWith("/_vercel") || url.pathname.startsWith("/api/")) return;
