@@ -5,10 +5,12 @@
 #   1. Every time you upload files: moves loose files named like  api1auth.js  into their folders (api/auth.js), using arrange-files.js.
 #      So you never have to upload a folder, only plain files.
 #   2. Actions -> "Cronoff tasks" -> Run workflow -> fetch-language-files : saves Python, SQL and Lua into your repo.
-#   3. Actions -> "Cronoff tasks" -> Run workflow -> build-desktop-apps    : builds the Windows, Mac and Linux apps.
+#   3. Actions -> "Cronoff tasks" -> Run workflow -> build-desktop-apps    : builds the Windows, Mac, Linux and Android apps.
 name: Cronoff tasks
 
 env:
+  # Pinned Pyodide version: must equal PYODIDE in local-server/get-vendor.js, PYODIDE_VERSION in index.html and PYO_VERSION in sw.js.
+  PYODIDE_VERSION: "0.26.4"
   # The character in your file names that stands for "/" (api1auth.js -> api/auth.js). Change it here if you use another one,
   # for example "__" or "--" (see START-HERE.md). It must also be the one used in the names of the files you upload.
   SEPARATOR: "1"
@@ -76,7 +78,22 @@ jobs:
         with:
           node-version: 20
       - name: Download (checked against npm's hashes)
-        run: node local-server/get-vendor.js
+        run: node local-server/get-vendor.js --force
+      - name: Verify Pyodide (version, all 5 files, valid wasm and zip)
+        run: |
+          set -e
+          V="$PYODIDE_VERSION"
+          grep -q "PYODIDE = \"$V\"" local-server/get-vendor.js || { echo "get-vendor.js is not pinned to $V"; exit 1; }
+          cd vendor/pyodide
+          for f in pyodide.js pyodide.asm.js pyodide.asm.wasm python_stdlib.zip pyodide-lock.json; do
+            test -s "$f" || { echo "MISSING vendor/pyodide/$f"; exit 1; }
+          done
+          test "$(head -c 4 pyodide.asm.wasm | od -An -tx1 | tr -d ' \n')" = "0061736d" || { echo "pyodide.asm.wasm is not a wasm file"; exit 1; }
+          test "$(stat -c %s pyodide.asm.wasm)" -gt 9000000 || { echo "pyodide.asm.wasm is too small"; exit 1; }
+          python3 -c "import zipfile,sys; sys.exit(1 if zipfile.ZipFile('python_stdlib.zip').testzip() else 0)" || { echo "python_stdlib.zip is corrupt"; exit 1; }
+          node -e 'const l=require("./pyodide-lock.json"); if(l.info.version!==process.argv[1]){console.error("lock is "+l.info.version);process.exit(1)}' "$V"
+          grep -q "\"pyodide\": \"$V\"" ../manifest.json || { echo "vendor/manifest.json is not $V"; exit 1; }
+          echo "Pyodide $V OK"
       - name: Save into the repository
         run: |
           git config user.name "cronoff-bot"
@@ -112,8 +129,52 @@ jobs:
             desktop/dist/Cronoff-Linux.AppImage
           if-no-files-found: error
 
+  # ------------------------------------------------------------------ 3b. Android app (made by make-android-app.js)
+  build-android:
+    if: github.event_name == 'workflow_dispatch' && inputs.task == 'build-desktop-apps'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Android tools
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
+      - name: Make the Android project (the site and Python files go inside)
+        run: node make-android-app.js
+      - name: Signing key (kept between builds, so a new apk installs over the old one)
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/cronoff.keystore
+          key: cronoff-android-key-v1
+      - name: Create the signing key if there is none yet
+        run: |
+          mkdir -p ~/.android
+          test -f ~/.android/cronoff.keystore || keytool -genkeypair -keystore ~/.android/cronoff.keystore -storepass android -keypass android -alias cronoff -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Cronoff, O=yehon106"
+      - name: Build the apk
+        working-directory: android-build
+        run: gradle --no-daemon assembleRelease
+      - name: Name the file
+        run: cp android-build/app/build/outputs/apk/release/app-release.apk Cronoff-Android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-android
+          path: Cronoff-Android.apk
+          if-no-files-found: error
+
   release:
-    needs: build
+    needs: [build, build-android]
+    # the desktop apps are released even when the Android build failed
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -131,6 +192,7 @@ jobs:
             - Windows: Cronoff-Setup.exe
             - Mac: Cronoff-Mac.dmg
             - Linux: Cronoff-Linux.AppImage (make it executable, then run it)
-            The apps are not code-signed, so Windows and Mac show a warning the first time. See SETUP-DESKTOP-APP.md.
+            - Android: Cronoff-Android.apk (open it on the phone and allow "Install unknown apps" for your browser)
+            The apps are not code-signed, so Windows and Mac show a warning the first time, and Android asks to allow installing from your browser. See SETUP-DESKTOP-APP.md.
           files: apps/*
           make_latest: true
