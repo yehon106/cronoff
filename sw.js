@@ -10,7 +10,7 @@ const VENDOR_CORE = ["/vendor/pyodide/pyodide.js", "/vendor/pyodide/pyodide.asm.
   "/vendor/sqljs/sql-wasm.js", "/vendor/sqljs/sql-wasm.wasm", "/vendor/wasmoon/index.js", "/vendor/wasmoon/glue.wasm"];
 const CDN_ORIGIN = "https://jsdelivr.net";
 
-// תוקן: הסרת ה-v לפני מספר הגרסה עבור נתיב ה-CDN המדויק ב-jsDelivr
+// תוקן: נתיב ה-CDN המדויק ב-jsDelivr ללא ה-v המיותרת
 const PYO_PATH = "/pyodide/" + PYO_VERSION + "/full/";
 const PYO_BASE = CDN_ORIGIN + PYO_PATH;
 
@@ -51,17 +51,22 @@ function good(res, url) {
   return true;
 }
 
-// Re-wrap a response with the headers that keep the page cross-origin isolated.
+// תוקן: כותרת ה-content-encoding נמחקת אך ורק עבור קובצי WASM כדי למנוע השחתה של קובץ ה-ZIP של ה-stdlib
 function isolate(res) {
   if (!res || res.status === 0) return res; // opaque / opaqueredirect: cannot be rewrapped
   const h = new Headers(res.headers);
-  h.delete("content-encoding");
-  h.delete("content-length");
+  
+  // מחיקת קידוד מוגבלת אך ורק לקובצי WASM (דרישת דפדפן מחמירה), קובצי ה-ZIP יישארו ללא שינוי קידוד
+  if (res.url && /\.wasm(\?|$)/.test(res.url)) {
+    h.delete("content-encoding");
+    h.delete("content-length");
+    const ct = (h.get("content-type") || "").toLowerCase();
+    if (ct.indexOf("wasm") < 0) h.set("Content-Type", "application/wasm");
+  }
+  
   h.set("Cross-Origin-Opener-Policy", "same-origin");
   h.set("Cross-Origin-Embedder-Policy", "require-corp");
   h.set("Cross-Origin-Resource-Policy", "cross-origin");
-  const ct = (h.get("content-type") || "").toLowerCase();
-  if (res.url && /\.wasm(\?|$)/.test(res.url) && ct.indexOf("wasm") < 0) h.set("Content-Type", "application/wasm");
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
