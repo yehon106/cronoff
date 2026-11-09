@@ -217,108 +217,6 @@
     #resizer { position: relative; z-index: 2; }
   }
   @media (max-width: 900px) {
-    #side { position: absolutenlo, Consolas, monospace; tab-size: 4; }
-  .editor { flex: 1; min-height: 0; display: flex; background: var(--edit); }
-  #gutter { width: 52px; padding: 14px 10px 14px 0; text-align: right; color: #566074; overflow: hidden; user-select: none; white-space: pre; border-right: 1px solid var(--line); }
-  .codewrap { position: relative; flex: 1; min-width: 0; }
-  #hl, #mk, #code { position: absolute; inset: 0; margin: 0; padding: 14px 14px 40px 14px; white-space: pre; border: 0; }
-  #hl { overflow: hidden; pointer-events: none; color: var(--ink); }
-  #mk { overflow: hidden; pointer-events: none; color: transparent; }
-  #mk .bad { text-decoration: underline wavy var(--err); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #gutter .gbad { color: var(--err); }
-  #gutter .gbad::before { content: "\25CF "; font-size: 10px; vertical-align: 1px; }
-  #probBar { flex: 0 0 auto; display: block; width: 100%; text-align: left; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 6px 14px; font-size: 12.5px; font-weight: 500; color: var(--err); background: var(--bar); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #probBar[hidden] { display: none; }
-  #code { background: transparent; color: transparent; caret-color: var(--ink); resize: none; overflow-x: hidden; overflow-y: auto; width: 100%; height: 100%; }
-  #code::selection { background: #2f4a6b; color: transparent; }
-  #hl .k { color: var(--k); } #hl .b { color: var(--b); } #hl .s { color: var(--s); }
-  #hl .n { color: var(--n); } #hl .c { color: var(--c); font-style: italic; }
-  #gear { padding: 7px 10px; line-height: 1; }
-  #setPanel { display: flex; flex-direction: column; gap: 8px; padding: 2px 6px; font-size: 13px; }
-  #setPanel label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
-  #setPanel input { accent-color: var(--accent); }
-  #retryBtn { padding: 4px 10px; font-size: 12px; }
-  #fixNote { color: var(--accent); font-size: 12px; margin-left: 8px; }
-  #installBtn { color: var(--accent); }
-  dialog a.btn { flex: 1 1 140px; text-align: center; text-decoration: none; font: inherit; font-weight: 600; font-size: 13px; padding: 9px 10px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink); background: transparent; }
-  dialog a.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  #acctBtn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  dialog { background: var(--bar); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; max-width: min(92vw, 400px); width: 100%; }
-  dialog::backdrop { background: rgba(0, 0, 0, .6); }
-  dialog h2 { margin: 0 0 6px; font-size: 18px; }
-  dialog p { margin: 6px 0; color: var(--muted); font-size: 13px; }
-  dialog input[type=text], dialog input[type=password] { width: 100%; font: inherit; padding: 8px 10px; margin: 6px 0; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
-  dialog [hidden] { display: none !important; }
-  #uiOk.danger { background: #e5484d; border-color: #e5484d; color: #fff; }
-  #uiTitle:empty { display: none; }
-  dialog .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-  dialog .row button { flex: 1 1 auto; }
-  dialog .primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  dialog .seg button { flex: 1; border-radius: 6px; }
-  dialog .seg button[aria-pressed=true] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  #acctMsg { min-height: 1.3em; font-size: 13px; color: var(--err); margin-top: 6px; }
-  #acctMsg.ok { color: #68d391; }
-  #setPanel button { font: inherit; font-size: 12px; padding: 4px 8px; text-align: left; }
-  #setPanel select { font: inherit; background: var(--edit); color: var(--ink); border: 1px solid var(--line); border-radius: 4px; }
-  #stdinBox { display: none; width: 100%; box-sizing: border-box; resize: vertical; font: inherit; font-size: 13px; padding: 6px 10px; color: var(--ink); background: var(--edit); border: 0; border-bottom: 1px solid var(--line); outline: none; }
-  #ac { position: fixed; z-index: 70; min-width: 230px; max-width: min(92vw, 400px); background: var(--bar); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 10px 28px rgba(0, 0, 0, .5); font: 13px/1.3 ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; overflow: hidden; }
-  #ac[hidden] { display: none; }
-  #ac ul { list-style: none; margin: 0; padding: 4px; max-height: 216px; overflow-y: auto; }
-  #ac li { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
-  #ac li.sel { background: #2b3a50; }
-  #ac .ic { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 4px; text-align: center; font: 700 11px/18px system-ui, sans-serif; color: #0e1218; background: var(--muted); }
-  #ac .k-k { background: #c792ea; } #ac .k-f, #ac .k-m { background: #82aaff; } #ac .k-v, #ac .k-p { background: #7fdbca; } #ac .k-c { background: #ffcb6b; }
-  #ac .k-s { background: #f78c6c; } #ac .k-t { background: #f07178; } #ac .k-a { background: #c3e88d; } #ac .k-M { background: #89ddff; }
-  #ac .lab { flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #ac .lab b { color: var(--accent); font-weight: 700; }
-  #ac .det { flex: 0 0 auto; color: var(--muted); }
-  #ac .acdoc { border-top: 1px solid var(--line); padding: 6px 10px; color: var(--muted); font: 12px/1.4 system-ui, -apple-system, sans-serif; max-height: 4.2em; overflow: hidden; }
-  #pvWrap { display: none; flex: 0 0 auto; height: min(55vh, 420px); min-height: 140px; max-height: 80%; resize: vertical; overflow: hidden; background: #fff; border-bottom: 1px solid var(--line); }
-  #pvWrap iframe { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
-  #code::placeholder { color: var(--muted); opacity: .7; }
-  #gfxWrap { display: none; flex: 0 0 auto; max-height: 75%; overflow: auto; background: #000; border-bottom: 1px solid var(--line); }
-  #gfx { display: block; max-width: 100%; height: auto; margin: 0 auto; outline: none; background: #000; }
-  #out { flex: 1; min-width: 0; margin: 0; padding: 14px; background: var(--out); overflow-x: hidden; overflow-y: auto; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
-  #out .err { color: var(--err); } #out .info { color: var(--info); }
-  #inputRow { display: none; background: var(--out); border-top: 1px solid var(--line); padding: 8px 14px; gap: 8px; align-items: center; color: var(--muted); }
-  #inputRow.show { display: flex; }
-  #inputEl { flex: 1; min-width: 0; background: var(--edit); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; }
-  #send { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 6px 14px; }
-  /* ---------- phones and tablets ---------- */
-  #keybar, #pad { display: none; }
-  html, body { overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
-  button, select, label, .ftab, #resizer { touch-action: manipulation; }
-  #gfx { touch-action: none; }
-  #keybar { flex: 0 0 auto; gap: 4px; padding: 5px 6px; overflow-x: auto; scrollbar-width: none; background: var(--bar); border-top: 1px solid var(--line); }
-  #keybar::-webkit-scrollbar { display: none; }
-  #keybar button { flex: 0 0 auto; min-width: 40px; padding: 8px 10px; font: 600 15px ui-monospace, Menlo, Consolas, monospace; }
-  #pad { flex: 0 0 auto; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 8px; background: var(--bar); border-bottom: 1px solid var(--line); }
-  #pad button { min-width: 52px; min-height: 48px; padding: 6px 10px; font-size: 18px; user-select: none; -webkit-user-select: none; }
-  #pad button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-  @media (pointer: coarse) {
-    html, body { overflow: hidden; }
-    body { position: fixed; left: 0; top: var(--vvt, 0px); width: 100%; height: var(--vvh, 100dvh); padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-    body.kb-open #keybar { display: flex; }
-    .mono { font-size: 16px; }
-    #gutter { width: 38px; padding-right: 6px; }
-    #hl, #mk, #code { padding-left: 10px; padding-right: 10px; }
-    button, #lang { min-height: 40px; }
-    :root { --bar-h: 48px; }
-    .iconbtn { width: 40px; height: 40px; min-width: 40px; }
-    .sbtn { min-height: 44px; }
-    #clear, #copyOut { min-height: 32px; padding: 4px 12px; }
-    .ftab { padding: 10px 12px; }
-    .ftab .x { padding: 6px 10px; }
-    #tabs #newTab { padding: 6px 14px; }
-    #lang, #inputEl, #stdinBox, #fnameInput, #setPanel select, #setPanel input:not([type=checkbox]), dialog input { font-size: 16px; }
-    #setPanel label { padding: 4px 0; }
-    #setPanel input[type=checkbox] { width: 20px; height: 20px; }
-    #resizer::after { content: ""; position: absolute; }
-    main[data-layout="right"] #resizer::after, main[data-layout="left"] #resizer::after { inset: 0 -10px; }
-    main[data-layout="top"] #resizer::after, main[data-layout="bottom"] #resizer::after { inset: -10px 0; }
-    #resizer { position: relative; z-index: 2; }
-  }
-  @media (max-width: 900px) {
     #side { position: absolute; left: 0; top: 0; bottom: 0; width: min(86vw, 320px); z-index: 30; box-shadow: 8px 0 28px rgba(0,0,0,.45); }
     body.side-open #scrim { display: block; position: absolute; inset: 0; z-index: 25; background: rgba(0,0,0,.5); }
   }
@@ -441,7 +339,7 @@
     <button id="rotate" title="Move the output panel">Output: Right</button>
     <button id="reset">Reset</button>
     <button id="resetAll" title="Delete every tab and start over with one empty main.py">Reset all</button>
-    <button id="installBtn" title="Get Cronoff as a real app for Windows, Mac or Linux, or add it to this browser">Get the app</button>
+    <button id="installBtn" title="Get Cronoff as a real app for Windows, Mac, Linux or Android, or add it to this browser">Get the app</button>
     <button id="acctBtn" title="Log in (optional): save your tabs online" hidden>Log in</button>
     <button id="gear" title="Editor settings" aria-label="Editor settings" aria-haspopup="true" aria-expanded="false" aria-controls="setPanel">&#9881;&#xFE0E;</button>
   </div>
@@ -449,6 +347,7 @@
   <button id="retryBtn" hidden title="Try loading this language again">Try again</button>
 </header>
 <div id="setPanel" role="group" aria-label="Editor settings" hidden>
+  <div class="setHead"><b>Editor settings</b><button id="setClose" type="button" aria-label="Close settings">Close</button></div>
   <label title="On: every tab can use the others. Python: import utils (utils.py). JavaScript and TypeScript: import / export or require(&quot;./utils.js&quot;). Lua: require(&quot;utils&quot;). Other tabs' files (text, json) can be opened too in Python. Off: each tab runs alone."><input type="checkbox" data-set="linkTabs"> Tabs work together (import each other)</label>
   <button id="gameBtn" title="Adds 7 tabs: a complete little game (Star Dodger) built from several files that import each other. Run the game.js tab.">Add the example game (7 tabs)</button>
   <label title="Typing ( [ { or a quote adds the closing one"><input type="checkbox" data-set="autoClose"> Auto-close brackets and quotes</label>
@@ -503,7 +402,7 @@
   <h2 id="instTitle">Get Cronoff as an app</h2>
   <p>A real app: its own window and icon. Python, JavaScript, HTML, SQL, Lua, Ruby and C/C++ work with <b>no internet at all</b>, and Java, C#, Go, Rust and Kotlin run on your computer when you have them installed.</p>
   <div id="dlRow" class="row"></div>
-  <p id="dlNote">The apps are not code-signed. Windows may say "Windows protected your PC": press More info, then Run anyway. On a Mac: right-click the app, then Open. On Linux: make the file executable, then run it.</p>
+  <p id="dlNote">The apps are not code-signed. Windows may say "Windows protected your PC": press More info, then Run anyway. On a Mac: right-click the app, then Open. On Linux: make the file executable, then run it. On Android: open the .apk and allow \"Install unknown apps\" for your browser when asked.</p>
   <p><a id="dlAll" href="#" target="_blank" rel="noopener" style="color:var(--accent)">All downloads</a></p>
   <p id="instText"></p>
   <div class="row"><button id="instBrowser" hidden title="Only a shortcut to the website: it still needs the website to open">Add to this browser instead</button><button id="instClose" class="primary">Close</button></div>
@@ -3551,6 +3450,12 @@ export function drawPickups(ctx) {
   /* ---------- download ---------- */
   $("download").addEventListener("click", () => {
     const blob = new Blob([codeEl.value], { type: (curKey() && LANGS[curKey()].mime) || "text/plain" });
+    if (window.cronoffAndroid) {       // inside the Android app a blob link cannot be saved: hand the text to the app
+      const u8 = new TextEncoder().encode(codeEl.value); let bin = "";
+      for (let i = 0; i < u8.length; i += 8192) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 8192));
+      try { window.cronoffAndroid.save(files[active].name, blob.type || "text/plain", btoa(bin)); } catch {}
+      return;
+    }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = files[active].name;
@@ -5477,6 +5382,7 @@ box-shadow|Shadow
     }
   }
   gearBtn.addEventListener("click", (e) => { e.stopPropagation(); setPanelOpen(setPanel.hidden); });
+  $("setClose").addEventListener("click", () => { setPanelOpen(false); gearBtn.focus(); });
   document.addEventListener("click", (e) => { if (!setPanel.hidden && !setPanel.contains(e.target)) setPanelOpen(false); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !setPanel.hidden) { setPanelOpen(false); gearBtn.focus(); } });
   window.addEventListener("resize", () => { if (!setPanel.hidden) setPanelOpen(true); });
@@ -5627,27 +5533,28 @@ box-shadow|Shadow
   /* ---------- am I running as an installed app? ---------- */
   const isApp = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   const isDesktopApp = /Electron\//.test(navigator.userAgent) || !!window.cronoffDesktop;   // inside the Cronoff desktop app
+  const isAndroidApp = /CronoffAndroid\//.test(navigator.userAgent) || !!window.cronoffAndroid;   // inside the Cronoff Android app
 
   /* ---------- get the app ---------- */
-  // The real apps are built by .github/workflows/desktop.yml and published as a GitHub Release. Change the name if you move the repository.
-  const DESKTOP_REPO = "yehon106/py";
+  // The real apps (Windows, Mac, Linux, Android) are built by .github/workflows/cronoff.yml and published as a GitHub Release. Change the name if you move the repository.
+  const DESKTOP_REPO = "yehon106/cronoff";
   const instBtn = $("installBtn"), instDlg = $("instDlg");
   let installEvent = null;
-  if (isApp || isDesktopApp) instBtn.hidden = true;      // already running as an app
+  if (isApp || isDesktopApp || isAndroidApp) instBtn.hidden = true;      // already running as an app
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvent = e; });
   window.addEventListener("appinstalled", () => { installEvent = null; instBtn.hidden = true; });
   function installHelp() {
     const ua = navigator.userAgent;
-    if (/Android/.test(ua)) return "On this phone: open the browser menu and choose \"Install app\" (or \"Add to Home screen\"). Android makes a real app from it.";
+    if (/Android/.test(ua)) return "Android: press \"Download for Android\", open the file, and allow installing from this browser if Android asks. Or, for only a shortcut: browser menu, \"Install app\".";
     if (/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "On this iPhone or iPad: tap the Share button, then \"Add to Home Screen\".";
     if (/Firefox/.test(ua)) return "Firefox on a computer cannot add web apps to the computer. Use the download above, or open Cronoff in Chrome or Edge.";
     if (/Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua)) return "To add only a shortcut in Safari on a Mac: File menu, then \"Add to Dock\".";
     return "";
   }
   function showAppDialog() {
-    const ua = navigator.userAgent, phone = /Android|iPhone|iPad|iPod/.test(ua);
+    const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1), android = /Android/.test(ua);
     const base = "https://github.com/" + DESKTOP_REPO + "/releases/latest";
-    const items = [["Windows", "Cronoff-Setup.exe", /Windows/.test(ua)], ["Mac", "Cronoff-Mac.dmg", /Macintosh/.test(ua) && !phone], ["Linux", "Cronoff-Linux.AppImage", /Linux/.test(ua) && !/Android/.test(ua)]];
+    const items = [["Android", "Cronoff-Android.apk", android], ["Windows", "Cronoff-Setup.exe", /Windows/.test(ua)], ["Mac", "Cronoff-Mac.dmg", /Macintosh/.test(ua) && !ios], ["Linux", "Cronoff-Linux.AppImage", /Linux/.test(ua) && !android]];
     items.sort((a, b) => b[2] - a[2]);
     const row = $("dlRow");
     row.textContent = "";
@@ -5656,7 +5563,7 @@ box-shadow|Shadow
       a.className = "btn" + (mine ? " primary" : ""); a.href = base + "/download/" + file; a.rel = "noopener";
       a.textContent = "Download for " + name; row.appendChild(a);
     }
-    row.hidden = $("dlNote").hidden = phone;
+    row.hidden = $("dlNote").hidden = ios;
     $("dlAll").href = base;
     $("instText").textContent = installHelp();
     $("instBrowser").hidden = !installEvent;
