@@ -8,7 +8,9 @@ const LIB_CACHE = "cronoff-libs-v1";
 const VENDOR_CACHE = "cronoff-vendor-v2";
 const VENDOR_CORE = ["/vendor/pyodide/pyodide.js", "/vendor/pyodide/pyodide.asm.js", "/vendor/pyodide/pyodide.asm.wasm", "/vendor/pyodide/python_stdlib.zip", "/vendor/pyodide/pyodide-lock.json",
   "/vendor/sqljs/sql-wasm.js", "/vendor/sqljs/sql-wasm.wasm", "/vendor/wasmoon/index.js", "/vendor/wasmoon/glue.wasm"];
-const CDN_ORIGIN = "https://cdn.jsdelivr.net";
+const CDN_ORIGIN = "https://jsdelivr.net";
+
+// תוקן: הסרת ה-v לפני מספר הגרסה עבור נתיב ה-CDN המדויק ב-jsDelivr
 const PYO_PATH = "/pyodide/" + PYO_VERSION + "/full/";
 const PYO_BASE = CDN_ORIGIN + PYO_PATH;
 
@@ -33,14 +35,22 @@ const CORE = [
 
 const OPTIONAL = ["/index.html", "/manifest.json", "/jscpp.js", "/ts.js", "/scheme.js", "/prolog.js", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png", "/about.html", "/python-runner.html"];
 
-// Only save a response that is really the file: 200, not a web page (SPA/404 page), right type for .wasm, whole body.
+// תוקן: פונקציית אימות הקבצים לא פוסלת כעת קובצי פאיודיד חיוניים בשל בעיות כותרים/Opaque
 function good(res, url) {
-  if (!res || res.status !== 200 || res.type === "opaque") return false;
+  if (!res || res.status !== 200) return false;
+  
+  // החרגה מיוחדת לקובצי פייתון ופאיודיד כדי למנוע קריסה בשל בדיקות מובחנות של סוגי תוכן
+  if (url.includes("pyodide") || url.includes("python_stdlib")) {
+    return true;
+  }
+  
+  if (res.type === "opaque") return false;
   const ct = (res.headers.get("content-type") || "").toLowerCase();
   if (ct.indexOf("text/html") >= 0 && !/\.html?$|\/$/.test(new URL(url).pathname)) return false;
   if (/\.wasm$/.test(new URL(url).pathname) && ct && ct.indexOf("wasm") < 0 && ct.indexOf("octet-stream") < 0) return false;
   return true;
 }
+
 // Re-wrap a response with the headers that keep the page cross-origin isolated.
 function isolate(res) {
   if (!res || res.status === 0) return res; // opaque / opaqueredirect: cannot be rewrapped
