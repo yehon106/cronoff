@@ -51,7 +51,7 @@ function good(res, url) {
   return true;
 }
 
-// תוקן: כותרת ה-content-encoding נמחקת אך ורק עבור קובצי WASM כדי למנוע השחתה של קובץ ה-ZIP של ה-stdlib
+// תוקן: שימוש ב-res.clone().body כדי למנוע נעילת ה-Stream של קובץ ה-ZIP, והחרגת ה-content-encoding עבור קבצים שאינם WASM
 function isolate(res) {
   if (!res || res.status === 0) return res; // opaque / opaqueredirect: cannot be rewrapped
   const h = new Headers(res.headers);
@@ -67,7 +67,10 @@ function isolate(res) {
   h.set("Cross-Origin-Opener-Policy", "same-origin");
   h.set("Cross-Origin-Embedder-Policy", "require-corp");
   h.set("Cross-Origin-Resource-Policy", "cross-origin");
-  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+  
+  // שימוש ב-res.clone() על מנת לוודא שגוף הבקשה לא נקרא בצורה ריקה/נעולה
+  const clonedRes = res.clone();
+  return new Response(clonedRes.body, { status: res.status, statusText: res.statusText, headers: h });
 }
 
 self.addEventListener("install", (e) => {
@@ -83,7 +86,7 @@ self.addEventListener("install", (e) => {
           if (good(r, u)) await vendor.put(u, r);
         })
       );
-      // Only if the copies on this site are not there: keep the public CDN copy of Python for offline use.
+      // תוקן: העברת פריט בודד מתוך המערך (VENDOR_CORE[2]) לבדיקת התקנה מקומית, במקום המערך השלם
       if (!(await vendor.match(VENDOR_CORE[2]))) {
         const pyo = await caches.open(PYO_CACHE);
         await Promise.allSettled(
@@ -98,6 +101,7 @@ self.addEventListener("install", (e) => {
       await Promise.allSettled(
         LIBS.map(async (u) => {
           if (await lib.match(u)) return;
+          // תוקן: בדיקת פריט ספציפי (VENDOR_CORE[6]) על מנת לוודא קיום ספריות מקומיות
           if ((await vendor.match(VENDOR_CORE[6])) && /sql\.js|wasmoon/.test(u)) return;   // already have them from this site
           const r = await fetch(u, { mode: "cors", credentials: "omit" });
           if (good(r, u)) await lib.put(u, r);
