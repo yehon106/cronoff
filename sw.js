@@ -9,7 +9,7 @@ const VENDOR_CACHE = "cronoff-vendor-v2";
 const VENDOR_CORE = ["/vendor/pyodide/pyodide.js", "/vendor/pyodide/pyodide.asm.js", "/vendor/pyodide/pyodide.asm.wasm", "/vendor/pyodide/python_stdlib.zip", "/vendor/pyodide/pyodide-lock.json",
   "/vendor/sqljs/sql-wasm.js", "/vendor/sqljs/sql-wasm.wasm", "/vendor/wasmoon/index.js", "/vendor/wasmoon/glue.wasm"];
 const CDN_ORIGIN = "https://cdn.jsdelivr.net";
-const PYO_PATH = "/pyodide/v" + PYO_VERSION + "/full/";
+const PYO_PATH = "/pyodide/" + PYO_VERSION + "/full/";
 const PYO_BASE = CDN_ORIGIN + PYO_PATH;
 
 // Other languages. Keep these versions in sync with SQL_BASE / LUA_BASE in index.html.
