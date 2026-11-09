@@ -35,7 +35,7 @@ const CORE = [
 
 const OPTIONAL = ["/index.html", "/manifest.json", "/jscpp.js", "/ts.js", "/scheme.js", "/prolog.js", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png", "/about.html", "/python-runner.html"];
 
-// תוקן: החרגת קובצי פאיודיד ופייתון מבדיקות סוגי מדיה קשיחים שעלולים לפסול אותם בשרתים מסוימים
+// תוקן: החרגה מוחלטת של קובצי הליבה של פאיודיד על מנת שלא ייפסלו בבדיקות ה-Content-Type המחמירות
 function good(res, url) {
   if (!res || res.status !== 200) return false;
   
@@ -50,18 +50,22 @@ function good(res, url) {
   return true;
 }
 
-// תוקן מן היסוד: מניעת שכפול ידני של res.body עבור קבצים שאינם סקריפטים/WASM. 
-// החזרת ה-Response המקורי עם כותרות מוזרקות בצורה בטוחה שלא נועלת או מרוקנת את ה-Stream של ה-ZIP.
+// תוקן מן היסוד: שימוש בשיטה בטוחה להזרקת כותרות אבטחה (COOP/COEP) ללא שכפול או פתיחה של res.body 
+// פתרון זה מונע לחלוטין את נעילת או ריקון ה-Stream של קובץ ה-ZIP של ה-Standard Library.
 function isolate(res) {
   if (!res || res.status === 0 || res.type === "opaque") return res;
   
-  // הגדרת כותרות האבטחה הנדרשות
+  // אם מדובר בקובץ ZIP או קובץ בינארי כבד אחר של פאיודיד, נחזיר אותו כפי שהוא מהרשת/Cache ללא שינוי מבני של הגוף
+  if (res.url && (res.url.includes("python_stdlib") || res.url.endsWith(".zip") || res.url.endsWith(".tar"))) {
+    return res;
+  }
+
   const h = new Headers(res.headers);
   h.set("Cross-Origin-Opener-Policy", "same-origin");
   h.set("Cross-Origin-Embedder-Policy", "require-corp");
   h.set("Cross-Origin-Resource-Policy", "cross-origin");
 
-  // טיפול ממוקד אך ורק בקובצי WASM כדי למנוע שגיאות טעינה של הדפדפן במצב Isolated
+  // טיפול ממוקד אך ורק בקובצי WASM (דרישה קשיחה של דפדפנים מודרניים תחת בידוד)
   if (res.url && /\.wasm(\?|$)/.test(res.url)) {
     h.delete("content-encoding");
     h.delete("content-length");
@@ -69,15 +73,14 @@ function isolate(res) {
     if (ct.indexOf("wasm") < 0) h.set("Content-Type", "application/wasm");
   }
 
-  // בניית התגובה מחדש בצורה בטוחה המשתמשת בפרמטרים המקוריים ללא איבוד הסטרים הקיים
   try {
+    // החזרת התגובה תוך שימוש ב-Stream המקורי בצורה בטוחה
     return new Response(res.body, {
       status: res.status,
       statusText: res.statusText,
       headers: h
     });
   } catch (err) {
-    // מנגנון גיבוי במקרה שהסטרים כבר נקרא במקום אחר במעלה הרשת
     return res;
   }
 }
@@ -95,8 +98,8 @@ self.addEventListener("install", (e) => {
         })
       );
       
-      // תוקן: בדיקת פריט ספציפי מתוך המערך במקום העברת המערך כולו לפונקציית ה-match
-      const hasLocalWasm = await vendor.match(VENDOR_CORE[2]);
+      // תוקן: בדיקת פריט ספציפי (האלמנט הראשון) מתוך המערך במקום העברת אובייקט המערך כולו
+      const hasLocalWasm = await vendor.match(VENDOR_CORE[0]);
       if (!hasLocalWasm) {
         const pyo = await caches.open(PYO_CACHE);
         await Promise.allSettled(
@@ -112,7 +115,7 @@ self.addEventListener("install", (e) => {
       await Promise.allSettled(
         LIBS.map(async (u) => {
           if (await lib.match(u)) return;
-          const hasLocalLibs = await vendor.match(VENDOR_CORE[7]);
+          const hasLocalLibs = await vendor.match(VENDOR_CORE[0]);
           if (hasLocalLibs && /sql\.js|wasmoon/.test(u)) return;
           const r = await fetch(u, { mode: "cors", credentials: "omit" });
           if (good(r, u)) await lib.put(u, r);
