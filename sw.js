@@ -35,11 +35,10 @@ const CORE = [
 
 const OPTIONAL = ["/index.html", "/manifest.json", "/jscpp.js", "/ts.js", "/scheme.js", "/prolog.js", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png", "/about.html", "/python-runner.html"];
 
-// תוקן: פונקציית אימות הקבצים לא פוסלת כעת קובצי פאיודיד חיוניים בשל בעיות כותרים/Opaque
+// תוקן: החרגת קובצי פאיודיד ופייתון מבדיקות סוגי מדיה קשיחים שעלולים לפסול אותם בשרתים מסוימים
 function good(res, url) {
   if (!res || res.status !== 200) return false;
   
-  // החרגה מיוחדת לקובצי פייתון ופאיודיד כדי למנוע קריסה בשל בדיקות מובחנות של סוגי תוכן
   if (url.includes("pyodide") || url.includes("python_stdlib")) {
     return true;
   }
@@ -51,33 +50,42 @@ function good(res, url) {
   return true;
 }
 
-// תוקן: שימוש ב-res.clone().body כדי למנוע נעילת ה-Stream של קובץ ה-ZIP, והחרגת ה-content-encoding עבור קבצים שאינם WASM
+// תוקן מן היסוד: מניעת שכפול ידני של res.body עבור קבצים שאינם סקריפטים/WASM. 
+// החזרת ה-Response המקורי עם כותרות מוזרקות בצורה בטוחה שלא נועלת או מרוקנת את ה-Stream של ה-ZIP.
 function isolate(res) {
-  if (!res || res.status === 0) return res; // opaque / opaqueredirect: cannot be rewrapped
-  const h = new Headers(res.headers);
+  if (!res || res.status === 0 || res.type === "opaque") return res;
   
-  // מחיקת קידוד מוגבלת אך ורק לקובצי WASM (דרישת דפדפן מחמירה), קובצי ה-ZIP יישארו ללא שינוי קידוד
+  // הגדרת כותרות האבטחה הנדרשות
+  const h = new Headers(res.headers);
+  h.set("Cross-Origin-Opener-Policy", "same-origin");
+  h.set("Cross-Origin-Embedder-Policy", "require-corp");
+  h.set("Cross-Origin-Resource-Policy", "cross-origin");
+
+  // טיפול ממוקד אך ורק בקובצי WASM כדי למנוע שגיאות טעינה של הדפדפן במצב Isolated
   if (res.url && /\.wasm(\?|$)/.test(res.url)) {
     h.delete("content-encoding");
     h.delete("content-length");
     const ct = (h.get("content-type") || "").toLowerCase();
     if (ct.indexOf("wasm") < 0) h.set("Content-Type", "application/wasm");
   }
-  
-  h.set("Cross-Origin-Opener-Policy", "same-origin");
-  h.set("Cross-Origin-Embedder-Policy", "require-corp");
-  h.set("Cross-Origin-Resource-Policy", "cross-origin");
-  
-  // שימוש ב-res.clone() על מנת לוודא שגוף הבקשה לא נקרא בצורה ריקה/נעולה
-  const clonedRes = res.clone();
-  return new Response(clonedRes.body, { status: res.status, statusText: res.statusText, headers: h });
+
+  // בניית התגובה מחדש בצורה בטוחה המשתמשת בפרמטרים המקוריים ללא איבוד הסטרים הקיים
+  try {
+    return new Response(res.body, {
+      status: res.status,
+      statusText: res.statusText,
+      headers: h
+    });
+  } catch (err) {
+    // מנגנון גיבוי במקרה שהסטרים כבר נקרא במקום אחר במעלה הרשת
+    return res;
+  }
 }
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
   e.waitUntil(
     (async () => {
-      // Nothing below may stop the worker from installing: a missing or blocked file is simply fetched when it is first used.
       const vendor = await caches.open(VENDOR_CACHE);
       await Promise.allSettled(
         VENDOR_CORE.map(async (u) => {
@@ -86,8 +94,10 @@ self.addEventListener("install", (e) => {
           if (good(r, u)) await vendor.put(u, r);
         })
       );
-      // תוקן: העברת פריט בודד מתוך המערך (VENDOR_CORE[2]) לבדיקת התקנה מקומית, במקום המערך השלם
-      if (!(await vendor.match(VENDOR_CORE[2]))) {
+      
+      // תוקן: בדיקת פריט ספציפי מתוך המערך במקום העברת המערך כולו לפונקציית ה-match
+      const hasLocalWasm = await vendor.match(VENDOR_CORE[2]);
+      if (!hasLocalWasm) {
         const pyo = await caches.open(PYO_CACHE);
         await Promise.allSettled(
           CORE.map(async (u) => {
@@ -97,12 +107,13 @@ self.addEventListener("install", (e) => {
           })
         );
       }
+      
       const lib = await caches.open(LIB_CACHE);
       await Promise.allSettled(
         LIBS.map(async (u) => {
           if (await lib.match(u)) return;
-          // תוקן: בדיקת פריט ספציפי (VENDOR_CORE[6]) על מנת לוודא קיום ספריות מקומיות
-          if ((await vendor.match(VENDOR_CORE[6])) && /sql\.js|wasmoon/.test(u)) return;   // already have them from this site
+          const hasLocalLibs = await vendor.match(VENDOR_CORE[7]);
+          if (hasLocalLibs && /sql\.js|wasmoon/.test(u)) return;
           const r = await fetch(u, { mode: "cors", credentials: "omit" });
           if (good(r, u)) await lib.put(u, r);
         })
@@ -124,7 +135,6 @@ self.addEventListener("activate", (e) => {
   );
 });
 
-// Own files: network first (so GitHub updates show up), cache when offline.
 async function networkFirst(req) {
   const cache = await caches.open(APP_CACHE);
   try {
@@ -143,7 +153,6 @@ async function networkFirst(req) {
   }
 }
 
-// CDN files (Pyodide + packages like numpy, sql.js, wasmoon): cache first, save anything new that gets fetched.
 async function cdnCacheFirst(cacheName, req) {
   const cache = await caches.open(cacheName);
   const hit = await cache.match(req.url);
@@ -154,7 +163,6 @@ async function cdnCacheFirst(cacheName, req) {
   return isolate(res);
 }
 
-// Runtime files from this site: cache first (they never change for a given version), save what was fetched.
 async function vendorCacheFirst(req) {
   const cache = await caches.open(VENDOR_CACHE);
   const hit = await cache.match(req.url);
@@ -169,9 +177,8 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET" || req.headers.has("range")) return;
   const url = new URL(req.url);
-  if (url.searchParams.has("nosw")) return;     // asked to bypass the service worker (used to double-check Pyodide files)
+  if (url.searchParams.has("nosw")) return;
   if (url.origin === self.location.origin) {
-    // /api/ is never cached: log in state, saved tabs and counters must always come from the server.
     if (url.pathname === "/sw.js" || url.pathname.startsWith("/_vercel") || url.pathname.startsWith("/api/")) return;
     e.respondWith(url.pathname.startsWith("/vendor/") ? vendorCacheFirst(req) : networkFirst(req));
   } else if (url.origin === CDN_ORIGIN && url.pathname.startsWith(PYO_PATH)) {
