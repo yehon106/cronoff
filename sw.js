@@ -1,11 +1,11 @@
 /* Cronoff (made by yehon106) service worker: offline support + COOP/COEP headers (needed for SharedArrayBuffer) */
-const APP_CACHE = "cronoff-app-v9";
+const APP_CACHE = "cronoff-app-v10";
 const PYO_VERSION = "0.26.4";   // pinned: same as PYODIDE in local-server/get-vendor.js and PYODIDE_VERSION in index.html
 // New cache names on purpose: they drop any broken Pyodide copy an older worker may have saved.
-const PYO_CACHE = "cronoff-pyodide-" + PYO_VERSION + "-v3";
+const PYO_CACHE = "cronoff-pyodide-" + PYO_VERSION + "-v4";
 const LIB_CACHE = "cronoff-libs-v1";
 // The runtimes served from this site (filled in at deploy time by local-server/get-vendor.js). Bump the v-number when their versions change.
-const VENDOR_CACHE = "cronoff-vendor-v3";
+const VENDOR_CACHE = "cronoff-vendor-v4";
 const VENDOR_CORE = ["/vendor/pyodide/pyodide.js", "/vendor/pyodide/pyodide.asm.js", "/vendor/pyodide/pyodide.asm.wasm", "/vendor/pyodide/python_stdlib.zip", "/vendor/pyodide/pyodide-lock.json",
   "/vendor/sqljs/sql-wasm.js", "/vendor/sqljs/sql-wasm.wasm", "/vendor/wasmoon/index.js", "/vendor/wasmoon/glue.wasm"];
 const CDN_ORIGIN = "https://cdn.jsdelivr.net";
@@ -141,7 +141,7 @@ async function vendorCacheFirst(req) {
   const hit = await cache.match(req.url);
   if (hit && good(hit, req.url)) return isolate(hit);
   if (hit) await cache.delete(req.url);
-  const res = await fetch(req);
+  const res = await fetch(req.url, { cache: "no-cache" });
   if (good(res, req.url)) cache.put(req.url, res.clone());
   return isolate(res);
 }
