@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cronoff Python diagnostic</title>
+<style>
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 12px; background: #111; color: #eee; }
+  button { font-size: 16px; padding: 10px 16px; margin: 4px 4px 12px 0; }
+  pre { white-space: pre-wrap; word-break: break-all; background: #000; padding: 10px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<h3>Cronoff Python diagnostic</h3>
+<button id="go">Run test</button><button id="copy">Copy result</button>
+<pre id="out">Press "Run test". It takes about 1 minute.</pre>
+<script>
+"use strict";
+const EXPECT = {
+  "pyodide.js":        { size: 14761,    sha: "c0069107621d5b942a659e737a12e774cc0451feaa2256f475d72e071d844ec7" },
+  "pyodide.asm.js":    { size: 1229099,  sha: "919560652ed3dad3707cb3a394785da1e046fb13dc0defa162058ff230cb7eed" },
+  "pyodide.asm.wasm":  { size: 10088051, sha: "b7e66a19427a55010ac3367c1b6c64b893f9826f783412945fdf0c3337f3bc94" },
+  "python_stdlib.zip": { size: 2341872,  sha: "72894522b791858b9d613ac786b951d8b5094035dcf376313ea24a466810f336" }
+};
+const out = document.getElementById("out");
+let log = "";
+function say(s) { log += s + "\n"; out.textContent = log; }
+const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+
+async function checkFiles(label, base) {
+  say("\n== Files from " + label + " ==");
+  const bytes = {};
+  for (const [name, exp] of Object.entries(EXPECT)) {
+    try {
+      const r = await fetch(base + name, { cache: "no-store" });
+      const buf = await r.arrayBuffer();
+      const sha = hex(await crypto.subtle.digest("SHA-256", buf));
+      const ok = buf.byteLength === exp.size && sha === exp.sha;
+      bytes[name] = buf;
+      say((ok ? "OK   " : "BAD  ") + name + "  status=" + r.status + "  size=" + buf.byteLength + " (want " + exp.size + ")" +
+        "  type=" + r.headers.get("content-type") + "  enc=" + r.headers.get("content-encoding") + (ok ? "" : "\n     sha=" + sha));
+    } catch (e) { say("FAIL " + name + ": " + e); }
+  }
+  return bytes;
+}
+
+function runWorker(label, base, stdlibBytes) {
+  return new Promise((resolve) => {
+    const src = `
+      self.onmessage = async (ev) => {
+        const { base, stdlib } = ev.data;
+        const errs = [];
+        try {
+          importScripts(base + "pyodide.js");
+          const opts = { indexURL: base, stderr: (s) => errs.push(s), stdout: (s) => errs.push("out: " + s) };
+          if (stdlib) opts.stdLibURL = URL.createObjectURL(new Blob([stdlib], { type: "application/zip" }));
+          const py = await loadPyodide(opts);
+          const v = py.runPython("import sys, encodings; sys.version + ' | fs=' + sys.getfilesystemencoding()");
+          self.postMessage({ ok: true, text: String(v) });
+        } catch (e) {
+          self.postMessage({ ok: false, text: String(e && e.message || e), errs });
+        }
+      };`;
+    const w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+    const timer = setTimeout(() => { w.terminate(); say("TIMEOUT " + label); resolve(); }, 45000);
+    w.onmessage = (ev) => {
+      clearTimeout(timer); w.terminate();
+      const d = ev.data;
+      say((d.ok ? "OK   " : "FAIL ") + label + ": " + d.text);
+      if (!d.ok && d.errs && d.errs.length) say("     python output:\n     " + d.errs.join("\n     "));
+      resolve();
+    };
+    w.onerror = (ev) => { clearTimeout(timer); say("WORKER ERROR " + label + ": " + (ev.message || ev)); resolve(); };
+    w.postMessage({ base, stdlib: stdlibBytes || null });
+  });
+}
+
+document.getElementById("go").onclick = async () => {
+  log = ""; say("Running...");
+  say("UA: " + navigator.userAgent);
+  say("crossOriginIsolated=" + self.crossOriginIsolated + "  SharedArrayBuffer=" + (typeof SharedArrayBuffer) +
+      "  deviceMemory=" + navigator.deviceMemory + "  cores=" + navigator.hardwareConcurrency);
+  say("service worker controller: " + (navigator.serviceWorker && navigator.serviceWorker.controller ? "yes" : "no"));
+  try { say("caches: " + (await caches.keys()).join(", ")); } catch (e) { say("caches: " + e); }
+  const site = location.origin + "/vendor/pyodide/";
+  const cdn = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
+  const siteBytes = await checkFiles("this site", site);
+  await checkFiles("CDN", cdn);
+  say("\n== Python start-up in a worker ==");
+  await runWorker("site, default options", site, null);
+  if (siteBytes["python_stdlib.zip"]) await runWorker("site, stdlib passed as verified bytes", site, siteBytes["python_stdlib.zip"]);
+  await runWorker("CDN, default options", cdn, null);
+  say("\nDone. Press 'Copy result' and paste it to Claude.");
+};
+document.getElementById("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(log); say("(copied)"); } catch (e) { say("Copy failed, select the text by hand."); }
+};
+</script>
+</body>
+</html>
