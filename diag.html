@@ -75,6 +75,23 @@ function runWorker(label, base, stdlibBytes) {
   });
 }
 
+async function runMain(label, base) {
+  const errs = [];
+  try {
+    await new Promise((res, rej) => {
+      const el = document.createElement("script");
+      el.src = base + "pyodide.js"; el.onload = res; el.onerror = () => rej(new Error("script failed to load"));
+      document.head.appendChild(el);
+    });
+    const py = await loadPyodide({ indexURL: base, stderr: (x) => errs.push(x) });
+    say("OK   " + label + ": " + py.runPython("import sys; sys.version.split()[0] + ' fs=' + sys.getfilesystemencoding()"));
+  } catch (e) {
+    say("FAIL " + label + ": " + (e && e.message || e));
+    const t = errs.filter((x) => /Fatal|Error/.test(x)).join(" | ");
+    if (t) say("     " + t);
+  }
+}
+
 document.getElementById("go").onclick = async () => {
   log = ""; say("Running...");
   say("UA: " + navigator.userAgent);
@@ -89,7 +106,11 @@ document.getElementById("go").onclick = async () => {
   say("\n== Python start-up in a worker ==");
   await runWorker("site, default options", site, null);
   if (siteBytes["python_stdlib.zip"]) await runWorker("site, stdlib passed as verified bytes", site, siteBytes["python_stdlib.zip"]);
-  await runWorker("CDN, default options", cdn, null);
+  await runWorker("CDN 0.26.4, default options", cdn, null);
+  await runWorker("CDN 0.27.7", "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/", null);
+  await runWorker("CDN 0.28.0", "https://cdn.jsdelivr.net/pyodide/v0.28.0/full/", null);
+  say("\n== Python start-up in the main thread (not a worker) ==");
+  await runMain("site, default options", site);
   say("\nDone. Press 'Copy result' and paste it to Claude.");
 };
 document.getElementById("copy").onclick = async () => {
