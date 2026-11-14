@@ -1,5 +1,5 @@
 /* Cronoff (made by yehon106) service worker: offline support + COOP/COEP headers (needed for SharedArrayBuffer) */
-const APP_CACHE = "cronoff-app-v11";
+const APP_CACHE = "cronoff-app-v10";
 const PYO_VERSION = "0.26.4";   // pinned: same as PYODIDE in local-server/get-vendor.js and PYODIDE_VERSION in index.html
 // New cache names on purpose: they drop any broken Pyodide copy an older worker may have saved.
 const PYO_CACHE = "cronoff-pyodide-" + PYO_VERSION + "-v4";
@@ -31,8 +31,7 @@ const CORE = [
   "pyodide-lock.json",
 ].map((f) => PYO_BASE + f);
 
-// /vendor/codemirror/cm.js is the editor (Phase 1). It is our own committed file, so it is fetched network-first like index.html (see the fetch handler) and kept here for offline use.
-const OPTIONAL = ["/index.html", "/vendor/codemirror/cm.js", "/manifest.json", "/jscpp.js", "/ts.js", "/scheme.js", "/prolog.js", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png", "/about.html", "/python-runner.html"];
+const OPTIONAL = ["/index.html", "/manifest.json", "/jscpp.js", "/ts.js", "/scheme.js", "/prolog.js", "/icon-192.png", "/icon-512.png", "/icon-maskable-512.png", "/about.html", "/python-runner.html"];
 
 // Only save a response that is really the file: 200, not a web page (SPA/404 page), right type for .wasm, whole body.
 function good(res, url) {
@@ -155,7 +154,7 @@ self.addEventListener("fetch", (e) => {
   if (url.origin === self.location.origin) {
     // /api/ is never cached: log in state, saved tabs and counters must always come from the server.
     if (url.pathname === "/sw.js" || url.pathname.startsWith("/_vercel") || url.pathname.startsWith("/api/")) return;
-    e.respondWith(url.pathname.startsWith("/vendor/") && !url.pathname.startsWith("/vendor/codemirror/") ? vendorCacheFirst(req) : networkFirst(req));
+    e.respondWith(url.pathname.startsWith("/vendor/") ? vendorCacheFirst(req) : networkFirst(req));
   } else if (url.origin === CDN_ORIGIN && url.pathname.startsWith(PYO_PATH)) {
     e.respondWith(cdnCacheFirst(PYO_CACHE, req));
   } else if (url.origin === CDN_ORIGIN && LIB_PATHS.some((p) => url.pathname.startsWith(p))) {

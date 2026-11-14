@@ -72,7 +72,7 @@
   button:hover:not(:disabled) { border-color: var(--muted); }
   button:disabled { opacity: .4; cursor: not-allowed; }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  #cm .cm-editor.cm-focused { outline: none; }
+  #code:focus, #code:focus-visible { outline: none; }
   #lang { font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); background: var(--edit); border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 8px; cursor: pointer; }
   #lang:disabled { opacity: .4; cursor: not-allowed; }
   #run { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); padding: 5px 18px; }
@@ -114,26 +114,20 @@
   #clear { margin-left: 6px; padding: 2px 10px; font-size: 12px; }
   .mono { font: 400 14.5px/1.6 ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; tab-size: 4; }
   .editor { flex: 1; min-height: 0; display: flex; background: var(--edit); }
-  .codewrap { position: relative; flex: 1; min-width: 0; min-height: 0; }
-  #cm { position: absolute; inset: 0; }
-  #cm .cm-editor { height: 100%; background: transparent; color: var(--ink); }
-  #cm .cm-scroller { font: inherit !important; line-height: inherit !important; overflow: auto; }
-  #cm .cm-content { padding: 14px 0 40px 0; caret-color: var(--ink); font: inherit; }
-  #cm .cm-line { padding: 0 14px; }
-  #cm .cm-gutters { background: var(--edit); color: #566074; border: 0; border-right: 1px solid var(--line); user-select: none; }
-  #cm .cm-gutters .cm-gutterElement { padding: 0 10px 0 0 !important; min-width: 52px; text-align: right; }
-  #cm .cm-lineNumbers .cm-gutterElement { padding-top: 0; }
-  #cm .cm-lineNumbers .gbad { color: var(--err); }
-  #cm .cm-lineNumbers .gbad::before { content: "\25CF "; font-size: 10px; vertical-align: 1px; }
-  #cm .bad { text-decoration: underline wavy var(--err); text-decoration-thickness: 1px; text-underline-offset: 3px; }
-  #cm .cm-content ::selection, #cm .cm-content::selection { background: #2f4a6b; }
-  #cm .cm-placeholder { color: var(--muted); opacity: .7; }
-  #cm .tk { color: var(--k); } #cm .tb { color: var(--b); } #cm .ts { color: var(--s); }
-  #cm .tn { color: var(--n); } #cm .tc { color: var(--c); font-style: italic; }
-  #cm .cm-matchingBracket { background: rgba(120,160,255,.25); outline: 1px solid rgba(120,160,255,.35); }
-  #cm .cm-nonmatchingBracket { color: var(--err); }
+  #gutter { width: 52px; padding: 14px 10px 14px 0; text-align: right; color: #566074; overflow: hidden; user-select: none; white-space: pre; border-right: 1px solid var(--line); }
+  .codewrap { position: relative; flex: 1; min-width: 0; }
+  #hl, #mk, #code { position: absolute; inset: 0; margin: 0; padding: 14px 14px 40px 14px; white-space: pre; border: 0; }
+  #hl { overflow: hidden; pointer-events: none; color: var(--ink); }
+  #mk { overflow: hidden; pointer-events: none; color: transparent; }
+  #mk .bad { text-decoration: underline wavy var(--err); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  #gutter .gbad { color: var(--err); }
+  #gutter .gbad::before { content: "\25CF "; font-size: 10px; vertical-align: 1px; }
   #probBar { flex: 0 0 auto; display: block; width: 100%; text-align: left; border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 6px 14px; font-size: 12.5px; font-weight: 500; color: var(--err); background: var(--bar); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #probBar[hidden] { display: none; }
+  #code { background: transparent; color: transparent; caret-color: var(--ink); resize: none; overflow-x: hidden; overflow-y: auto; width: 100%; height: 100%; }
+  #code::selection { background: #2f4a6b; color: transparent; }
+  #hl .k { color: var(--k); } #hl .b { color: var(--b); } #hl .s { color: var(--s); }
+  #hl .n { color: var(--n); } #hl .c { color: var(--c); font-style: italic; }
   #gear { padding: 7px 10px; line-height: 1; }
   #setPanel { position: fixed; z-index: 60; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; font-size: 13px; background: var(--bar); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.45); max-width: calc(100vw - 16px); max-height: calc(100dvh - 70px); overflow-y: auto; }
   #setPanel[hidden] { display: none !important; }
@@ -179,6 +173,7 @@
   #ac .acdoc { border-top: 1px solid var(--line); padding: 6px 10px; color: var(--muted); font: 12px/1.4 system-ui, -apple-system, sans-serif; max-height: 4.2em; overflow: hidden; }
   #pvWrap { display: none; flex: 0 0 auto; height: min(55vh, 420px); min-height: 140px; max-height: 80%; resize: vertical; overflow: hidden; background: #fff; border-bottom: 1px solid var(--line); }
   #pvWrap iframe { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
+  #code::placeholder { color: var(--muted); opacity: .7; }
   #gfxWrap { display: none; flex: 0 0 auto; max-height: 75%; overflow: auto; background: #000; border-bottom: 1px solid var(--line); }
   #gfx { display: block; max-width: 100%; height: auto; margin: 0 auto; outline: none; background: #000; }
   #out { flex: 1; min-width: 0; margin: 0; padding: 14px; background: var(--out); overflow-x: hidden; overflow-y: auto; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
@@ -203,8 +198,8 @@
     body { position: fixed; left: 0; top: var(--vvt, 0px); width: 100%; height: var(--vvh, 100dvh); padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
     body.kb-open #keybar { display: flex; }
     .mono { font-size: 16px; }
-    #cm .cm-gutters .cm-gutterElement { min-width: 30px; padding: 0 6px 0 0 !important; }
-    #cm .cm-line { padding-left: 10px; padding-right: 10px; }
+    #gutter { width: 38px; padding-right: 6px; }
+    #hl, #mk, #code { padding-left: 10px; padding-right: 10px; }
     button, #lang { min-height: 40px; }
     :root { --bar-h: 48px; }
     .iconbtn { width: 40px; height: 40px; min-width: 40px; }
@@ -267,6 +262,7 @@
   #ac .acdoc { border-top: 1px solid var(--line); padding: 6px 10px; color: var(--muted); font: 12px/1.4 system-ui, -apple-system, sans-serif; max-height: 4.2em; overflow: hidden; }
   #pvWrap { display: none; flex: 0 0 auto; height: min(55vh, 420px); min-height: 140px; max-height: 80%; resize: vertical; overflow: hidden; background: #fff; border-bottom: 1px solid var(--line); }
   #pvWrap iframe { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
+  #code::placeholder { color: var(--muted); opacity: .7; }
   #gfxWrap { display: none; flex: 0 0 auto; max-height: 75%; overflow: auto; background: #000; border-bottom: 1px solid var(--line); }
   #gfx { display: block; max-width: 100%; height: auto; margin: 0 auto; outline: none; background: #000; }
   #out { flex: 1; min-width: 0; margin: 0; padding: 14px; background: var(--out); overflow-x: hidden; overflow-y: auto; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
@@ -292,8 +288,8 @@
     body { position: fixed; left: 0; top: var(--vvt, 0px); width: 100%; height: var(--vvh, 100dvh); padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
     body.kb-open #keybar { display: flex; }
     .mono { font-size: 16px; }
-    #cm .cm-gutters .cm-gutterElement { min-width: 30px; padding: 0 6px 0 0 !important; }
-    #cm .cm-line { padding-left: 10px; padding-right: 10px; }
+    #gutter { width: 38px; padding-right: 6px; }
+    #hl, #mk, #code { padding-left: 10px; padding-right: 10px; }
     button, #lang { min-height: 40px; }
     #clear, #copyOut { min-height: 32px; padding: 4px 12px; }
     .ftab { padding: 10px 12px; }
@@ -364,13 +360,18 @@
   <label title="Type for, if, def, class... and press Tab to get the whole pattern with places to fill in (Tab moves between them)."><input type="checkbox" data-set="snippets"> Patterns (for, if, def...)</label>
   <label title="Optional. Leave empty to use this site's own code server. To use the server on your own computer from this page, type its address, for example http://localhost:3000 (see the local server guide)."><span>Code server address</span> <input id="serverUrl" type="text" placeholder="(this site)" spellcheck="false" autocapitalize="off" style="width:150px"></label>
   <a href="/about.html" target="_blank" rel="noopener" style="font-size:12px;color:var(--accent)">About Cronoff</a>
-  <div style="font-size:11px;opacity:.6">Editor build: codemirror-6</div>
+  <div style="font-size:11px;opacity:.6">Editor build: autocorrect-keys</div>
 </div>
 <main id="main" data-layout="right">
   <section id="editorSec">
     <div class="tab" id="tabs" role="tablist"></div>
     <div class="editor">
-      <div class="codewrap"><div id="cm" class="mono"></div></div>
+      <div id="gutter" class="mono" aria-hidden="true"></div>
+      <div class="codewrap">
+        <pre id="hl" class="mono" aria-hidden="true"></pre>
+        <pre id="mk" class="mono" aria-hidden="true"></pre>
+        <textarea id="code" class="mono" wrap="off" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" enterkeyhint="enter" placeholder="Type or paste your code here. Ctrl+Enter runs it." aria-label="Code (Ctrl+Enter to run)"></textarea>
+      </div>
     </div>
     <button id="probBar" hidden title="Click to jump to the problem"></button>
     <div id="keybar" role="toolbar" aria-label="Quick keys"></div>
@@ -2537,206 +2538,14 @@ export function drawPickups(ctx) {
   }
 }
 </script>
-<script src="/vendor/codemirror/cm.js"></script>
 <script>
   const DEFAULT_CODE = "";   // new tabs start empty: Cronoff never fills in code for you
   const KEY = "pyro-code", LKEY = "pyro-layout";
   const $ = (id) => document.getElementById(id);
-  const outEl = $("out"),
+  const codeEl = $("code"), hlEl = $("hl"), gutEl = $("gutter"), outEl = $("out"),
         runBtn = $("run"), stopBtn = $("stop"), statusEl = $("status"), retryBtn = $("retryBtn"),
         inputRow = $("inputRow"), inputEl = $("inputEl"),
         mainEl = $("main"), outSec = $("outSec"), resizer = $("resizer");
-
-  /* ---------- the editor: CodeMirror 6 (vendor/codemirror/cm.js) wrapped to look like the old textarea ---------- */
-  // Everything below this block talks to `codeEl` the way it always did (value, selectionStart, setSelectionRange, addEventListener...).
-  // If cm.js cannot be loaded, a plain textarea takes its place so Cronoff still runs (no colours or line numbers).
-  const codeEl = (() => {
-    const C = window.CM, host = $("cm");
-    if (!C) {
-      const t = document.createElement("textarea");
-      t.className = "mono"; t.wrap = "off"; t.spellcheck = false; t.setAttribute("aria-label", "Code (Ctrl+Enter to run)");
-      t.placeholder = "Type or paste your code here. Ctrl+Enter runs it.";
-      t.style.cssText = "position:absolute;inset:0;width:100%;height:100%;margin:0;padding:14px;border:0;resize:none;background:transparent;color:var(--ink);white-space:pre;outline:none";
-      host.appendChild(t);
-      const bar = $("probBar"); bar.textContent = "The editor file vendor/codemirror/cm.js did not load: using the basic editor. Reload the page."; bar.hidden = false;
-      t.el = t; t.gutterWidth = 0; t.setLang = () => {}; t.setMarks = () => {}; t.reveal = (p) => t.setSelectionRange(p, p);
-      Object.defineProperty(t, "hasFocus", { get: () => document.activeElement === t });
-      t.coordsAtCaret = () => { const r = t.getBoundingClientRect(); return { left: r.left + 20, top: r.top + 20, bottom: r.top + 43 }; };
-      t.edit = (from, to, ins) => {
-        t.setSelectionRange(from, to);
-        let ok = false;
-        try { ok = ins === "" ? document.execCommand("delete") : document.execCommand("insertText", false, ins); } catch {}
-        if (!ok) { t.setRangeText(ins, from, to, "end"); t.dispatchEvent(new Event("input")); }
-      };
-      t.insertText = (s) => { if (!document.execCommand("insertText", false, s)) { t.setRangeText(s, t.selectionStart, t.selectionEnd, "end"); t.dispatchEvent(new Event("input")); } };
-      t.undo = () => document.execCommand("undo"); t.redo = () => document.execCommand("redo");
-      return t;
-    }
-
-    const PROG = C.Annotation.define();                     // marks changes made by our own code (the input event is sent by hand)
-    const setMarksEff = C.StateEffect.define();
-    const BAD = C.Decoration.mark({ class: "bad" });
-    class BadNum extends C.GutterMarker {}
-    BadNum.prototype.elementClass = "gbad";
-    const BADNUM = new BadNum();
-    const EMPTY = { deco: C.Decoration.none, gut: new C.RangeSetBuilder().finish() };
-    const markField = C.StateField.define({
-      create: () => EMPTY,
-      update(v, tr) {
-        for (const e of tr.effects) if (e.is(setMarksEff)) return e.value;
-        return tr.docChanged ? EMPTY : v;
-      },
-      provide: (f) => [C.EditorView.decorations.from(f, (v) => v.deco), C.lineNumberMarkers.from(f, (v) => v.gut)],
-    });
-
-    // Prolog has no CodeMirror package: a tiny tokenizer built from the word lists of the old highlighter.
-    const prologLang = () => C.StreamLanguage.define({
-      startState: () => ({ blk: false }),
-      token(st, state) {
-        if (state.blk) { if (st.match(/^.*?\*\//)) state.blk = false; else st.skipToEnd(); return "comment"; }
-        if (st.eatSpace()) return null;
-        if (st.match("/*")) { state.blk = true; return "comment"; }
-        if (st.match(/^%.*/)) return "comment";
-        if (st.match(/^"(?:\\.|[^"\\])*"/) || st.match(/^'(?:\\.|[^'\\])*'/)) return "string";
-        if (st.match(/^\d+\.?\d*/)) return "number";
-        if (st.match(/^[A-Z_]\w*/)) return "atom";
-        if (st.match(/^[a-z]\w*/)) { const w = st.current(); return LANGS.pl.kw.has(w) ? "keyword" : LANGS.pl.bi.has(w) ? "builtin" : null; }
-        st.next(); return null;
-      },
-    });
-    const langCache = {};
-    const langExt = (k) => {
-      if (!k) return [];
-      if (langCache[k]) return langCache[k];
-      let ext = [];
-      try { ext = k === "pl" ? prologLang() : C.langs[k] ? C.langs[k]() : []; } catch (e) { console.error("language " + k, e); }
-      return (langCache[k] = ext);
-    };
-
-    const t = C.tags;
-    const hl = C.tagHighlighter([
-      { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.operatorKeyword, t.modifier, t.self, t.null, t.tagName], class: "tk" },
-      { tag: [t.standard(t.variableName), t.function(t.variableName), t.className, t.typeName, t.attributeName, t.macroName, t.namespace, t.labelName], class: "tb" },
-      { tag: [t.string, t.regexp, t.special(t.string), t.character, t.attributeValue], class: "ts" },
-      { tag: [t.number, t.bool, t.atom, t.color, t.unit, t.escape], class: "tn" },
-      { tag: [t.comment], class: "tc" },
-    ]);
-
-    // listeners: capture ones first, like on the old textarea
-    const subs = { keydown: [[], []], beforeinput: [[], []], input: [[], []], scroll: [[], []] };
-    const emit = (type, ev) => {
-      const s = subs[type];
-      for (const f of s[0].concat(s[1])) {
-        try { f.call(api, ev); } catch (e) { console.error(e); }
-        if (ev && ev.__stop) break;
-      }
-    };
-    const withStop = (e) => {
-      e.__stop = false;
-      const orig = e.stopImmediatePropagation;
-      e.stopImmediatePropagation = function () { e.__stop = true; return orig.call(e); };
-      return e;
-    };
-
-    let pendingInput = null;
-    function onUpdate(u) {
-      if (!u.docChanged || u.transactions.some((tr) => tr.annotation(PROG))) return;
-      const tr = u.transactions[u.transactions.length - 1];
-      let inputType = "insertText", data = null;
-      u.changes.iterChanges((a, b, c, d, ins) => { data = ins.toString(); });
-      if (tr.isUserEvent("delete.backward")) { inputType = "deleteContentBackward"; data = null; }
-      else if (tr.isUserEvent("delete")) { inputType = "deleteContentForward"; data = null; }
-      else if (tr.isUserEvent("input.paste")) inputType = "insertFromPaste";
-      else if (tr.isUserEvent("input.drop")) inputType = "insertFromDrop";
-      else if (tr.isUserEvent("undo")) { inputType = "historyUndo"; data = null; }
-      else if (tr.isUserEvent("redo")) { inputType = "historyRedo"; data = null; }
-      else if (data === "\n" || (data && /^\n[ \t]*$/.test(data))) inputType = "insertLineBreak";
-      const first = !pendingInput;
-      pendingInput = { type: "input", inputType, data, isComposing: false };
-      if (first) queueMicrotask(() => { const ev = pendingInput; pendingInput = null; emit("input", ev); });   // not inside the CodeMirror update
-    }
-
-    const keys = C.defaultKeymap.filter((k) => k.key !== "Enter" && k.key !== "Mod-Enter" && k.key !== "Shift-Enter");
-    keys.push({ key: "Enter", run: C.insertNewline });
-    const langC = new C.Compartment();
-    let curKey = null;
-    const exts = [
-      C.lineNumbers(), markField, C.history(), C.indentUnit.of("    "), C.EditorState.tabSize.of(4),
-      C.bracketMatching(), C.syntaxHighlighting(hl),
-      C.placeholder("Type or paste your code here. Ctrl+Enter runs it."),
-      C.EditorView.contentAttributes.of({ spellcheck: "false", autocapitalize: "off", autocorrect: "off", autocomplete: "off", enterkeyhint: "enter", "aria-label": "Code (Ctrl+Enter to run)" }),
-      C.Prec.highest(C.EditorView.domEventHandlers({
-        keydown(e) { emit("keydown", withStop(e)); return e.defaultPrevented; },
-        beforeinput(e) { emit("beforeinput", withStop(e)); return e.defaultPrevented; },
-      })),
-      C.keymap.of(C.historyKeymap.concat(keys)),
-      C.EditorView.updateListener.of(onUpdate),
-    ];
-    const makeState = (text) => C.EditorState.create({ doc: text, selection: { anchor: text.length }, extensions: [exts, langC.of(langExt(curKey))] });
-    const view = new C.EditorView({ state: makeState(""), parent: host });
-    view.scrollDOM.addEventListener("scroll", () => emit("scroll", { type: "scroll" }));
-
-    let hasMarks = false;
-    const apply = (from, to, ins) => view.dispatch({
-      changes: { from, to, insert: ins }, selection: { anchor: from + ins.length },
-      userEvent: ins === "" ? "delete.backward" : "input.type", annotations: PROG.of(true), scrollIntoView: true,
-    });
-    const api = {
-      el: view.contentDOM, view,
-      get value() { return view.state.doc.toString(); },
-      set value(v) {                                           // like a textarea: new text, caret at the end, undo history cleared
-        view.setState(makeState(String(v)));
-      },
-      get selectionStart() { return view.state.selection.main.from; },
-      get selectionEnd() { return view.state.selection.main.to; },
-      get scrollTop() { return view.scrollDOM.scrollTop; }, set scrollTop(v) { view.scrollDOM.scrollTop = v; },
-      get scrollLeft() { return view.scrollDOM.scrollLeft; }, set scrollLeft(v) { view.scrollDOM.scrollLeft = v; },
-      get clientWidth() { return view.scrollDOM.clientWidth - api.gutterWidth; },
-      get clientHeight() { return view.scrollDOM.clientHeight; },
-      get gutterWidth() { const g = view.dom.querySelector(".cm-gutters"); return g ? g.offsetWidth : 0; },
-      get hasFocus() { return view.hasFocus; },
-      getBoundingClientRect() { return view.scrollDOM.getBoundingClientRect(); },
-      setSelectionRange(a, b) { view.dispatch({ selection: { anchor: a, head: b == null ? a : b }, annotations: PROG.of(true) }); },
-      setRangeText(ins, from, to) { apply(from, to, ins); },                       // like a textarea: sends no input event
-      edit(from, to, ins) {                                                         // one undoable replacement, input event sent
-        apply(from, to, ins);
-        emit("input", { type: "input", inputType: ins === "" ? "deleteContentBackward" : "insertText", data: ins || null, isComposing: false });
-      },
-      insertText(s) { view.dispatch(view.state.update(view.state.replaceSelection(s), { userEvent: "input.type", scrollIntoView: true })); },
-      undo() { C.undo(view); }, redo() { C.redo(view); },
-      focus() { view.focus(); }, blur() { view.contentDOM.blur(); },
-      setAttribute(n, v) { view.contentDOM.setAttribute(n, v); }, removeAttribute(n) { view.contentDOM.removeAttribute(n); },
-      reveal(pos) { view.dispatch({ effects: C.EditorView.scrollIntoView(pos, { y: "center" }), annotations: PROG.of(true) }); },
-      coordsAtCaret() { return view.coordsAtPos(view.state.selection.main.head) || { left: view.scrollDOM.getBoundingClientRect().left, top: view.scrollDOM.getBoundingClientRect().top, bottom: view.scrollDOM.getBoundingClientRect().top + 23 }; },
-      setLang(k) {
-        if (k === curKey) return;
-        curKey = k;
-        view.dispatch({ effects: langC.reconfigure(langExt(k)), annotations: PROG.of(true) });
-      },
-      setMarks(list) {                                                              // [{s, e, line}]: red wavy text and a red line number
-        if (!list.length && !hasMarks) return;
-        hasMarks = list.length > 0;
-        const doc = view.state.doc, b = new C.RangeSetBuilder(), g = new C.RangeSetBuilder(), lines = new Set();
-        let last = 0;
-        for (const q of list.slice().sort((x, y) => x.s - y.s)) {
-          const s = Math.min(q.s, doc.length), e = Math.min(q.e, doc.length);
-          if (s >= last && e > s) { b.add(s, e, BAD); last = e; }
-          lines.add(q.line);
-        }
-        for (const n of [...lines].sort((x, y) => x - y)) if (n >= 1 && n <= doc.lines) g.add(doc.line(n).from, doc.line(n).from, BADNUM);
-        view.dispatch({ effects: setMarksEff.of({ deco: b.finish(), gut: g.finish() }), annotations: PROG.of(true) });
-      },
-      addEventListener(type, fn, opts) {
-        if (subs[type]) subs[type][(opts === true || (opts && opts.capture)) ? 0 : 1].push(fn);
-        else view.contentDOM.addEventListener(type, fn, opts);
-      },
-      dispatchEvent(ev) {
-        if (subs[ev.type]) { emit(ev.type, withStop(ev)); return !ev.defaultPrevented; }
-        return view.contentDOM.dispatchEvent(ev);
-      },
-    };
-    return api;
-  })();
 
   /* ---------- languages: the file extension picks one ---------- */
   // Keep these two versions in sync with LIB_PATHS / LIBS in sw.js.
@@ -2849,6 +2658,7 @@ export function drawPickups(ctx) {
     name: "HTML", exts: ["html", "htm"], preview: true, mime: "text/html", noMarks: true,
     token: /(<!\x2d-[\s\S]*?-->)|("[^"\n]*")|\b(\d+\.?\d*)\b|\b([A-Za-z_]\w*)\b/gm,
     kw: words(""), bi: words(""),
+    hl: (src) => hlHtml(src),
   };
   LANGS.css = {
     name: "CSS", exts: ["css"], assets: true, mime: "text/css", noMarks: true,
@@ -2865,11 +2675,66 @@ export function drawPickups(ctx) {
   }
   function defaultFor() { return ""; }
 
-  /* ---------- editor: syntax colours and line numbers come from CodeMirror 6 (vendor/codemirror) ---------- */
+  /* ---------- editor: highlight + line numbers ---------- */
   const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+  // HTML: tags, attributes, comments; the inside of <script> and <style> gets JavaScript / CSS colours.
+  function hlHtml(src) {
+    const body = (t, L) => highlight(t, L).slice(0, -1);
+    const tag = (t) => {
+      const m = /^(<\/?)([A-Za-z][\w:-]*)([\s\S]*)$/.exec(t);
+      if (!m) return esc(t);
+      const attrs = m[3].replace(/([^\s=\/"'<>]+)(\s*=\s*)?("[^"]*"|'[^']*'|[^\s"'>]+)?|[^\s=\/"'<>]+|[\s\S]/g, (a, n, eq, v) => {
+        if (!n) return esc(a);
+        return '<span class="b">' + esc(n) + "</span>" + esc(eq || "") + (v ? '<span class="s">' + esc(v) + "</span>" : "");
+      });
+      return esc(m[1]) + '<span class="k">' + esc(m[2]) + "</span>" + attrs;
+    };
+    const re = /<!\x2d-[\s\S]*?(?:-->|$)|<![^>]*>|<\/?[A-Za-z][^>]*>?|&#?\w+;/g;
+    let out = "", last = 0, m;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      const t = m[0];
+      last = m.index + t.length;
+      if (t.startsWith("<!\x2d-") || t.startsWith("<!")) out += '<span class="c">' + esc(t) + "</span>";
+      else if (t.charAt(0) === "&") out += '<span class="n">' + esc(t) + "</span>";
+      else {
+        out += tag(t);
+        const open = /^<(script|style)\b/i.exec(t);
+        if (open && !t.endsWith("/>")) {
+          const close = src.toLowerCase().indexOf("</" + open[1].toLowerCase(), last);
+          const end = close < 0 ? src.length : close;
+          const inner = src.slice(last, end);
+          const isJs = open[1].toLowerCase() === "script" && !/type\s*=\s*["'](?!module|text\/javascript|application\/javascript)/i.test(t);
+          out += isJs || open[1].toLowerCase() === "style" ? body(inner, open[1].toLowerCase() === "style" ? LANGS.css : LANGS.js) : esc(inner);
+          last = end; re.lastIndex = end;
+        }
+      }
+    }
+    return out + esc(src.slice(last)) + "\n";
+  }
+  function highlight(src, L) {
+    if (L && L.hl) return L.hl(src);
+    if (!L) return esc(src) + "\n";
+    let out = "", last = 0, m;
+    const re = L.token;
+    re.lastIndex = 0;
+    while ((m = re.exec(src))) {
+      out += esc(src.slice(last, m.index));
+      const t = m[0], w = L.ci ? t.toUpperCase() : t.charAt(0) === "#" ? t.replace(/[ \t]/g, "") : t;
+      if (m[1]) out += '<span class="c">' + esc(t) + "</span>";
+      else if (m[2]) out += '<span class="s">' + esc(t) + "</span>";
+      else if (m[3]) out += '<span class="n">' + t + "</span>";
+      else if (L.kw.has(w)) out += '<span class="k">' + t + "</span>";
+      else if (L.bi.has(w)) out += '<span class="b">' + t + "</span>";
+      else out += t;
+      last = m.index + t.length;
+    }
+    return out + esc(src.slice(last)) + "\n";
+  }
+
   /* ---------- red markers, layer 1: brackets and strings ---------- */
-  const barEl = $("probBar");
+  const mkEl = $("mk"), barEl = $("probBar");
   let marksOn = true, problems = [], marksTimer = 0, barIdx = 0;
   const runErr = {};                  // tabId -> { line, msg, code }: where the last run failed (kept while the code is unchanged)
   let baseProblems = [], synProblems = [], checkSeq = 0, checkWant = null;
@@ -2877,7 +2742,7 @@ export function drawPickups(ctx) {
   function queueMarks(v) {            // any edit clears the markers at once; they come back when you pause
     clearTimeout(marksTimer);
     problems = []; baseProblems = []; synProblems = [];
-    codeEl.setMarks([]);
+    mkEl.textContent = v + "\n";
     barEl.hidden = true;
     if (marksOn) marksTimer = setTimeout(computeMarks, 300);
   }
@@ -2939,8 +2804,19 @@ export function drawPickups(ctx) {
     problems = list;
     barIdx = 0;
     if (!problems.length) return;
-    codeEl.setMarks(problems);
+    let html = "", last = 0;
+    for (const q of problems) {
+      if (q.s < last) continue;
+      html += esc(v.slice(last, q.s)) + '<span class="bad">' + esc(v.slice(q.s, q.e)) + "</span>";
+      last = q.e;
+    }
+    mkEl.innerHTML = html + esc(v.slice(last)) + "\n";
+    const bad = new Set(problems.map((q) => q.line));
+    let nums = "";
+    for (let i = 1, n = v.split("\n").length; i <= n; i++) nums += (bad.has(i) ? '<span class="gbad">' + i + "</span>" : i) + "\n";
+    gutEl.innerHTML = nums;
     showBar();
+    sync();
   }
   function showBar() {
     const q = problems[barIdx % problems.length];
@@ -2952,7 +2828,9 @@ export function drawPickups(ctx) {
     const q = problems[barIdx % problems.length];
     codeEl.focus();
     codeEl.setSelectionRange(q.s, q.e);
-    codeEl.reveal(q.s);
+    const lh = parseFloat(getComputedStyle(codeEl).lineHeight) || 23.2;
+    codeEl.scrollTop = Math.max(0, (q.line - 1) * lh - codeEl.clientHeight / 3);
+    sync();
     barIdx++;
     showBar();
   });
@@ -2960,8 +2838,18 @@ export function drawPickups(ctx) {
   function refresh() {
     const v = codeEl.value;
     const k = langOf(files[active].name);
-    codeEl.setLang(k);
+    hlEl.innerHTML = highlight(v, k && LANGS[k]);
+    const n = v.split("\n").length;
+    let nums = "";
+    for (let i = 1; i <= n; i++) nums += i + "\n";
+    gutEl.textContent = nums;
     queueMarks(v);
+    sync();
+  }
+  function sync() {
+    hlEl.scrollTop = codeEl.scrollTop; hlEl.scrollLeft = codeEl.scrollLeft;
+    gutEl.scrollTop = codeEl.scrollTop;
+    mkEl.scrollTop = codeEl.scrollTop; mkEl.scrollLeft = codeEl.scrollLeft;
   }
 
   /* ---------- in-site popups (instead of the browser's own confirm / alert / prompt) ---------- */
@@ -3020,6 +2908,7 @@ export function drawPickups(ctx) {
     files[active].code = codeEl.value;
     saveFiles();
   });
+  codeEl.addEventListener("scroll", sync);
 
   /* ===== EDIT ENGINE (pure: no page code inside, tested in Node) ===== */
   // handle(text, [selStart, selEnd], {key, shift}, settings, ours, lang) -> null | {text, selection, ours, edit}
@@ -3355,7 +3244,7 @@ export function drawPickups(ctx) {
   /* ---------- stopper: typing stops at the right edge ---------- */
   const meter = document.createElement("canvas").getContext("2d");
   function maxCols() {
-    meter.font = getComputedStyle(codeEl.el).font;
+    meter.font = getComputedStyle(codeEl).font;
     const w = meter.measureText("0").width || 9;
     return Math.max(1, Math.floor((codeEl.clientWidth - 28) / w) - 1);
   }
@@ -3384,15 +3273,15 @@ export function drawPickups(ctx) {
   const isHoriz = () => layout === "right" || layout === "left";
   // Narrowest the editor may get: wide enough to show the longest line.
   function neededEditor() {
-    meter.font = getComputedStyle(codeEl.el).font;
+    meter.font = getComputedStyle(codeEl).font;
     const w = meter.measureText("0").width || 9;
     let longest = 0;
     for (const ln of codeEl.value.split("\n")) longest = Math.max(longest, ln.replace(/\t/g, "    ").length);
-    return codeEl.gutterWidth + 28 + Math.ceil((longest + 1) * w) + 17;
+    return gutEl.offsetWidth + 28 + Math.ceil((longest + 1) * w) + 17;
   }
   // Shortest the editor may get: tall enough to show every line.
   function neededEditorH() {
-    const lh = parseFloat(getComputedStyle(codeEl.el).lineHeight) || 23.2;
+    const lh = parseFloat(getComputedStyle(codeEl).lineHeight) || 23.2;
     const lines = codeEl.value.split("\n").length;
     return document.querySelector("#editorSec .tab").offsetHeight + 28 + Math.ceil(lines * lh) + 2;
   }
@@ -4227,7 +4116,14 @@ export function drawPickups(ctx) {
     if (res.edit) {
       const { from, to, ins } = res.edit;
       engineBusy = true;
-      try { codeEl.edit(from, to, ins); } finally { engineBusy = false; }
+      codeEl.setSelectionRange(from, to);
+      let ok = false;
+      try { ok = ins === "" ? document.execCommand("delete") : document.execCommand("insertText", false, ins); } catch {}
+      if (!ok || codeEl.value !== res.text) {          // fallback: still correct, but Ctrl+Z may not undo it
+        codeEl.setRangeText(ins, from, to, "end");
+        codeEl.dispatchEvent(new Event("input"));
+      }
+      engineBusy = false;
     }
     codeEl.setSelectionRange(res.selection[0], res.selection[1]);
     ours = res.ours;
@@ -5159,9 +5055,16 @@ box-shadow|Shadow
   }
 
   // ---- the popup ----
+  let mirror = null;
   function caretPoint() {
-    const c = codeEl.coordsAtCaret(), lh = parseFloat(getComputedStyle(codeEl.el).lineHeight) || 23;
-    return { x: c.left, y: c.top, h: c.bottom - c.top || lh };
+    const cs = getComputedStyle(codeEl);
+    if (!mirror) { mirror = document.createElement("div"); mirror.setAttribute("aria-hidden", "true"); mirror.style.cssText = "position:absolute;visibility:hidden;white-space:pre;top:0;left:-9999px;overflow:hidden;"; document.body.appendChild(mirror); }
+    for (const p of ["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "tabSize", "paddingTop", "paddingLeft", "paddingRight"]) mirror.style[p] = cs[p];
+    mirror.style.width = codeEl.clientWidth + "px";
+    mirror.textContent = codeEl.value.slice(0, codeEl.selectionStart);
+    const span = document.createElement("span"); span.textContent = "\u200b"; mirror.appendChild(span);
+    const r = codeEl.getBoundingClientRect();
+    return { x: r.left + span.offsetLeft - codeEl.scrollLeft, y: r.top + span.offsetTop - codeEl.scrollTop, h: parseFloat(cs.lineHeight) || 23 };
   }
   function acPlace() {
     if (!ac) return;
@@ -5339,7 +5242,7 @@ box-shadow|Shadow
   codeEl.addEventListener("blur", () => { acClose(); });
   codeEl.addEventListener("scroll", () => { if (ac) acPlace(); });
   window.addEventListener("resize", () => acClose());
-  document.addEventListener("selectionchange", () => { if (ac && codeEl.hasFocus && (codeEl.selectionStart !== ac.caret || codeEl.selectionEnd !== ac.caret)) acClose(); });
+  document.addEventListener("selectionchange", () => { if (ac && document.activeElement === codeEl && (codeEl.selectionStart !== ac.caret || codeEl.selectionEnd !== ac.caret)) acClose(); });
 
   /* ---------- auto-correct: typos in code words and in plain words ---------- */
   // When you finish a word (space, Enter, a bracket, a comma ...) and it is a typo we are SURE about, it is fixed on the spot.
@@ -5571,7 +5474,7 @@ box-shadow|Shadow
     codeEl.focus();
     if (replay(s)) return;
     replaying = true;
-    try { codeEl.insertText(s); } finally { replaying = false; }
+    try { document.execCommand("insertText", false, s); } finally { replaying = false; }
   }
   const moveCaret = (d) => { const p = Math.max(0, Math.min(codeEl.value.length, codeEl.selectionStart + d)); codeEl.focus(); codeEl.setSelectionRange(p, p); };
   const QUICK = [
@@ -5579,8 +5482,8 @@ box-shadow|Shadow
     ["\u21E4", "Unindent", () => { codeEl.focus(); replay("Tab", { shiftKey: true }); }],
     ["\u25C0", "Cursor left", () => moveCaret(-1)],
     ["\u25B6", "Cursor right", () => moveCaret(1)],
-    ["\u21B6", "Undo", () => { codeEl.focus(); codeEl.undo(); }],
-    ["\u21B7", "Redo", () => { codeEl.focus(); codeEl.redo(); }],
+    ["\u21B6", "Undo", () => { codeEl.focus(); document.execCommand("undo"); }],
+    ["\u21B7", "Redo", () => { codeEl.focus(); document.execCommand("redo"); }],
   ].concat("( ) [ ] { } \" ' : = # _ ; , . + - * / < > & | ! ? \\ @ $ % ^ ~".split(" ").map((c) => [c, c, () => typeSym(c)]))
    .concat([["\u2304", "Hide keyboard", () => codeEl.blur()]]);
   for (const [label, title, fn] of QUICK) {
