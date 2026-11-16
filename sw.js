@@ -1,11 +1,17 @@
 /* Cronoff (made by yehon106) service worker: offline support + COOP/COEP headers (needed for SharedArrayBuffer) */
-const APP_CACHE = "cronoff-app-v11";
+const APP_CACHE = "cronoff-app-v12";
 const PYO_VERSION = "0.26.4";   // pinned: same as PYODIDE in local-server/get-vendor.js and PYODIDE_VERSION in index.html
 // New cache names on purpose: they drop any broken Pyodide copy an older worker may have saved.
 const PYO_CACHE = "cronoff-pyodide-" + PYO_VERSION + "-v4";
 const LIB_CACHE = "cronoff-libs-v1";
 // The runtimes served from this site (filled in at deploy time by local-server/get-vendor.js). Bump the v-number when their versions change.
 const VENDOR_CACHE = "cronoff-vendor-v4";
+// Phase 2 (packages): npm modules from esm.sh, and Python packages (PyPI metadata + wheels) so they work offline after the first use.
+const ESM_ORIGIN = "https://esm.sh";
+const ESM_CACHE = "cronoff-esm-v1";          // the Packages window "Forget saved modules" button deletes this name
+const PKG_CACHE = "cronoff-pkgs-v1";
+const PYPI_JSON_ORIGIN = "https://pypi.org";
+const PYPI_FILES_ORIGIN = "https://files.pythonhosted.org";
 const VENDOR_CORE = ["/vendor/pyodide/pyodide.js", "/vendor/pyodide/pyodide.asm.js", "/vendor/pyodide/pyodide.asm.wasm", "/vendor/pyodide/python_stdlib.zip", "/vendor/pyodide/pyodide-lock.json",
   "/vendor/sqljs/sql-wasm.js", "/vendor/sqljs/sql-wasm.wasm", "/vendor/wasmoon/index.js", "/vendor/wasmoon/glue.wasm"];
 const CDN_ORIGIN = "https://cdn.jsdelivr.net";
@@ -22,6 +28,9 @@ const LIBS = [
   CDN_ORIGIN + "/npm/wasmoon@1.16.0/dist/glue.wasm",
   CDN_ORIGIN + "/npm/@ruby/3.4-wasm-wasi@2.8.1/dist/browser.umd.js",
 ];
+
+// micropip + packaging come from the Pyodide CDN (see pyodide-lock.json). Kept ready so Packages works offline. Same version as PYO_VERSION.
+const PYO_EXTRA = ["micropip-0.6.0-py3-none-any.whl", "packaging-23.2-py3-none-any.whl"].map((f) => PYO_BASE + f);
 
 const CORE = [
   "pyodide.js",
@@ -80,6 +89,16 @@ self.addEventListener("install", (e) => {
           })
         );
       }
+      {
+        const pyo = await caches.open(PYO_CACHE);
+        await Promise.allSettled(
+          PYO_EXTRA.map(async (u) => {
+            if (await pyo.match(u)) return;
+            const r = await fetch(u, { mode: "cors", credentials: "omit" });
+            if (good(r, u)) await pyo.put(u, r);
+          })
+        );
+      }
       const lib = await caches.open(LIB_CACHE);
       await Promise.allSettled(
         LIBS.map(async (u) => {
@@ -99,7 +118,7 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(
     (async () => {
       for (const k of await caches.keys()) {
-        if (k !== APP_CACHE && k !== PYO_CACHE && k !== LIB_CACHE && k !== VENDOR_CACHE) await caches.delete(k);
+        if (k !== APP_CACHE && k !== PYO_CACHE && k !== LIB_CACHE && k !== VENDOR_CACHE && k !== ESM_CACHE && k !== PKG_CACHE) await caches.delete(k);
       }
       await self.clients.claim();
     })()
@@ -136,6 +155,24 @@ async function cdnCacheFirst(cacheName, req) {
   return isolate(res);
 }
 
+// Fixed versions never change (lodash@4.17.21, /v135/...): cache first. Everything else (lodash, lodash@4): the network first so updates arrive, the saved copy when offline or slow.
+async function fetchSaved(cacheName, req, immutable, key) {
+  key = key || req.url;
+  const cache = await caches.open(cacheName);
+  const hit = await cache.match(key);
+  if (hit && immutable && good(hit, req.url)) return isolate(hit);
+  try {
+    const res = await fetch(req.url, { mode: "cors", credentials: "omit", signal: hit && AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined });
+    if (good(res, req.url)) { cache.put(key, res.clone()); return isolate(res); }
+    if (hit && good(hit, req.url)) return isolate(hit);   // the server answered with an error page: keep using the saved copy
+    return isolate(res);
+  } catch (err) {
+    if (hit && good(hit, req.url)) return isolate(hit);
+    return new Response("Offline and not saved yet: " + req.url, { status: 503, headers: { "Content-Type": "text/plain", "Cross-Origin-Resource-Policy": "cross-origin" } });
+  }
+}
+const esmPinned = (u) => /@\d+\.\d+\.\d+/.test(u.pathname) || /^\/(v\d+|stable)\//.test(u.pathname);
+
 // Runtime files from this site: cache first (they never change for a given version), save what was fetched.
 async function vendorCacheFirst(req) {
   const cache = await caches.open(VENDOR_CACHE);
@@ -156,6 +193,13 @@ self.addEventListener("fetch", (e) => {
     // /api/ is never cached: log in state, saved tabs and counters must always come from the server.
     if (url.pathname === "/sw.js" || url.pathname.startsWith("/_vercel") || url.pathname.startsWith("/api/")) return;
     e.respondWith(url.pathname.startsWith("/vendor/") && !url.pathname.startsWith("/vendor/codemirror/") ? vendorCacheFirst(req) : networkFirst(req));
+  } else if (url.origin === ESM_ORIGIN) {
+    e.respondWith(fetchSaved(ESM_CACHE, req, esmPinned(url)));
+  } else if (url.origin === PYPI_JSON_ORIGIN && /^\/(simple\/[^/]+\/?|pypi\/[^/]+(\/[^/]+)?\/json)$/.test(url.pathname)) {
+    // micropip reads the "simple" index (JSON or HTML, chosen by the Accept header: saved apart) or the older /pypi/NAME/json.
+    e.respondWith(fetchSaved(PKG_CACHE, req, false, req.url + (req.url.indexOf("?") < 0 ? "?" : "&") + "cronoff-accept=" + (/json/i.test(req.headers.get("accept") || "") ? "json" : "other")));
+  } else if (url.origin === PYPI_FILES_ORIGIN && /\.(whl|whl\.metadata|tar\.gz|zip)$/.test(url.pathname)) {
+    e.respondWith(fetchSaved(PKG_CACHE, req, true));
   } else if (url.origin === CDN_ORIGIN && url.pathname.startsWith(PYO_PATH)) {
     e.respondWith(cdnCacheFirst(PYO_CACHE, req));
   } else if (url.origin === CDN_ORIGIN && LIB_PATHS.some((p) => url.pathname.startsWith(p))) {
