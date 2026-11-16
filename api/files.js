@@ -1,6 +1,6 @@
 // Cronoff: your tabs saved to your account (made by yehon106). Needs a log in.
-//   GET /api/files            -> { files:[{name,code}], saved }
-//   PUT /api/files {files}    -> { saved }
+//   GET /api/files            -> { files:[{name,code,stdin?}], saved }
+//   PUT /api/files {files}    -> { saved }   (each file: name, code, optional stdin)
 "use strict";
 const L = require("./_lib");
 
@@ -23,8 +23,9 @@ module.exports = async (req, res) => {
     const files = [];
     for (const f of b.files) {
       if (!f || typeof f.name !== "string" || typeof f.code !== "string" || f.name.length > 60) return L.send(res, 400, { error: "Bad tab." });
-      total += f.code.length + f.name.length;
-      files.push({ name: f.name, code: f.code });
+      const stdin = typeof f.stdin === "string" ? f.stdin.slice(0, 20000) : "";   // the Input box text of this tab (optional)
+      total += f.code.length + f.name.length + stdin.length;
+      files.push(stdin ? { name: f.name, code: f.code, stdin } : { name: f.name, code: f.code });
     }
     if (total > MAX_TOTAL) return L.send(res, 413, { error: "Too big to save (limit about 400 KB)." });
     const saved = Date.now();
