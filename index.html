@@ -329,6 +329,32 @@
     #status { order: 3; flex: 0 0 auto; max-width: 110px; }
     #retryBtn { order: 4; }
   }
+  /* ---------- Phase 2: stdin panel + packages ---------- */
+  #stdinPanel { flex: 0 0 auto; background: var(--bar); border-top: 1px solid var(--line); }
+  #stdinPanel[hidden] { display: none; }
+  .stdinHead { display: flex; align-items: center; gap: 8px; padding: 4px 10px 0; font-size: 12px; color: var(--muted); }
+  .stdinHead label { font-weight: 600; color: var(--ink); }
+  #stdinHint { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #stdinClear { padding: 1px 8px; font-size: 11px; min-height: 0; }
+  #stdinPanel #stdinBox { display: block; width: 100%; height: 56px; min-height: 34px; max-height: 40vh; resize: vertical; font: 13px/1.5 ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace; padding: 4px 10px 6px; color: var(--ink); background: var(--edit); border: 0; outline: none; }
+  #pkgDlg { max-width: min(94vw, 460px); max-height: 88dvh; overflow-y: auto; }
+  #pkgDlg h3 { margin: 12px 0 4px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  #pkgDlg code { color: var(--ink); background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+  .pkgRow { display: flex; gap: 6px; align-items: center; }
+  .pkgRow input { flex: 1 1 auto; min-width: 0; margin: 0 !important; }
+  #pkgDlg ul { list-style: none; margin: 4px 0; padding: 0; max-height: 28dvh; overflow-y: auto; }
+  #pkgDlg li { display: flex; align-items: center; gap: 8px; padding: 5px 2px; border-bottom: 1px solid var(--line); font-size: 13px; }
+  #pkgDlg li .nm { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+  #pkgDlg li .nt { flex: 0 0 auto; color: var(--muted); font-size: 12px; }
+  #pkgDlg li button { padding: 1px 8px; font-size: 12px; min-height: 0; }
+  #pkgDlg li.empty { color: var(--muted); }
+  #pkgMsg { min-height: 1.3em; font-size: 13px; color: var(--err); margin-top: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  #pkgMsg.ok { color: #68d391; }
+  #pkgDlg button:disabled { opacity: .5; }
+  @media (pointer: coarse) {
+    #stdinPanel #stdinBox, #pkgDlg input[type=text] { font-size: 16px; }
+    #stdinClear, #pkgDlg li button { min-height: 30px; }
+  }
 </style>
 </head>
 <body>
@@ -340,6 +366,7 @@
   <button id="stop" disabled>Stop</button>
   <div class="hbtns">
     <button id="download">Download</button>
+    <button id="pkgBtn" title="Install Python packages (micropip) and save JavaScript packages (npm via esm.sh) for offline use">Packages</button>
     <button id="rotate" title="Move the output panel">Output: Right</button>
     <button id="reset">Reset</button>
     <button id="resetAll" title="Delete every tab and start over with one empty main.py">Reset all</button>
@@ -372,13 +399,16 @@
     <div class="editor">
       <div class="codewrap"><div id="cm" class="mono"></div></div>
     </div>
+    <div id="stdinPanel">
+      <div class="stdinHead"><label for="stdinBox">Input (stdin)</label><span id="stdinHint"></span><button id="stdinClear" type="button" title="Empty the input box">Clear</button></div>
+      <textarea id="stdinBox" rows="2" placeholder="One line per input() / cin / gets / io.read. Leave empty to type input while the program runs." aria-label="Program input (stdin)" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+    </div>
     <button id="probBar" hidden title="Click to jump to the problem"></button>
     <div id="keybar" role="toolbar" aria-label="Quick keys"></div>
   </section>
   <div id="resizer" role="separator" aria-label="Drag to resize"></div>
   <section id="outSec">
     <div class="tab"><b>Output</b><button id="copyOut" title="Copy the output text">Copy</button><button id="clear">Clear</button></div>
-    <textarea id="stdinBox" rows="2" placeholder="Program input for this language (one line per input). It is sent when you press Run." aria-label="Program input"></textarea>
     <div id="pvWrap"></div>
     <div id="gfxWrap"><canvas id="gfx" width="640" height="480" tabindex="0" aria-label="Graphics window"></canvas></div>
     <pre id="out" class="mono" aria-live="polite"></pre>
@@ -425,6 +455,26 @@
   </div>
   <div id="acctMsg" role="status"></div>
 </dialog>
+<dialog id="pkgDlg" aria-labelledby="pkgTitle">
+  <h2 id="pkgTitle">Packages</h2>
+  <div class="row seg"><button id="pkgTabPy" type="button" aria-pressed="true">Python</button><button id="pkgTabJs" type="button" aria-pressed="false">JavaScript</button></div>
+  <div id="pkgPy">
+    <p>Pure-Python packages from PyPI (micropip) and Pyodide's own packages such as numpy. Installed packages load automatically in every Python run, and downloaded files are saved for offline use.</p>
+    <div class="pkgRow"><input id="pkgName" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="requests  or  numpy==1.26.4" aria-label="Python package name"><button id="pkgInstall" type="button" class="primary">Install</button></div>
+    <h3>Installed</h3>
+    <ul id="pkgList"></ul>
+    <div class="row"><button id="pkgRefresh" type="button" title="Ask the Python runner what is loaded right now (starts Python if needed)">Refresh list</button></div>
+  </div>
+  <div id="pkgJs" hidden>
+    <p>In a .js or .ts tab just write <code>import _ from "lodash"</code> or <code>require("dayjs")</code>. Modules come from esm.sh and are saved for offline use after the first load.</p>
+    <div class="pkgRow"><input id="npmName" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="lodash  or  dayjs@1.11.10" aria-label="npm package name"><button id="npmAdd" type="button" class="primary">Save for offline</button></div>
+    <h3>Saved</h3>
+    <ul id="npmList"></ul>
+    <div class="row"><button id="npmClear" type="button">Forget saved modules</button></div>
+  </div>
+  <div id="pkgMsg" role="status"></div>
+  <div class="row"><button id="pkgClose" type="button">Close</button></div>
+</dialog>
 <script id="w-common" type="text/plain">
 // Make sure every console method exists (some browsers or extensions remove some).
 for (const m of ["log", "info", "debug", "warn", "error", "trace", "group", "groupEnd", "groupCollapsed", "count", "countReset", "dir", "dirxml", "table", "time", "timeLog", "timeEnd", "assert", "clear"]) {
@@ -453,6 +503,8 @@ async function withBases(fn, probe) {
   throw new Error(head + "\n" + notes.join("\n") + "\nIf you run this site: GitHub > Actions > \"Fetch language files\" > Run workflow (see SETUP-RUNTIMES.md).");
 }
 let TAB = null;
+let PKGS = [];            // Python packages to have installed before the program starts
+let STDIN_FIXED = false;  // true when the Input box had text: the program reads exactly that, then gets end-of-input
 let PROJECT = [];   // every tab as {name, code}, when "Tabs work together" is on
    // id of the tab whose program this worker is running; stamped on every message
 function post(m) { m.tabId = TAB; postMessage(m); }
@@ -542,7 +594,7 @@ function readLine() {
   post({ type: "input" });
   Atomics.wait(i32, 0, 0);
   const n = i32[1];
-  const s = dec.decode(bytes.slice(0, n));
+  const s = n < 0 ? null : dec.decode(bytes.slice(0, n));   // n < 0: the Input box has no more lines. null = end of input.
   Atomics.store(i32, 0, 0);
   return s;
 }
@@ -567,9 +619,17 @@ onmessage = async (ev) => {
     let problems = [];
     try { if (LANG.check) problems = (await LANG.check(m.code)) || []; } catch (e) { problems = []; }
     postMessage({ type: "check", tabId: m.tabId, seq: m.seq, problems });
+  } else if (m.type === "pkg") {
+    // Package manager request from the Packages window (only the Python runner answers with a list).
+    let r;
+    try { r = LANG.pkg ? await LANG.pkg(m) : { error: "This language has no package manager." }; }
+    catch (e) { r = { error: String((e && e.message) || e) }; }
+    postMessage(Object.assign({ type: "pkgres", id: m.id }, r));
   } else if (m.type === "run") {
     TAB = m.tabId === undefined ? null : m.tabId;
     PROJECT = m.project || [];
+    PKGS = m.pkgs || [];
+    STDIN_FIXED = !!m.stdinFixed;
     try {
       await LANG.run(m.code, m.canvas);
     } catch (e) {
@@ -620,7 +680,7 @@ function friendlyPy(raw) {
     [/^AttributeError/, "That thing has no such name or method. Check the spelling."],
     [/^RecursionError/, "A function keeps calling itself and never stops."],
     [/^FileNotFoundError/, "That file does not exist here. Files do not carry over between runs in the browser."],
-    [/^EOFError/, "The program asked for input but there was none left."],
+    [/^EOFError/, "The program asked for more input than the Input box holds. Add lines to the Input box (under the editor) and run again."],
   ];
   const key = name + ": " + text;
   const hint = (hints.find((h) => h[0].test(key)) || [])[1];
@@ -645,7 +705,11 @@ const PYO_NEEDED = ["pyodide.asm.wasm", "python_stdlib.zip", "pyodide-lock.json"
 async function pyoCheck(b) {
   for (const f of PYO_NEEDED) {
     let r;
-    try { r = await fetch(b + f, { method: "HEAD", cache: "no-store" }); } catch (e) { return f + ": unreachable (blocked or offline)"; }
+    try { r = await fetch(b + f, { method: "HEAD", cache: "no-store" }); }
+    catch (e) {
+      // A HEAD request never reaches the service worker, so offline it always fails. Try a normal GET: the saved copy answers it.
+      try { r = await fetch(b + f, { cache: "no-store" }); if (r.body) r.body.cancel(); } catch (e2) { return f + ": unreachable (blocked or offline)"; }
+    }
     if (!r.ok) return f + ": HTTP " + r.status;
     const ct = (r.headers.get("content-type") || "").toLowerCase();
     if (ct.indexOf("text/html") >= 0) return f + ": got a web page instead of the file";
@@ -742,6 +806,38 @@ async function pyoStartOnce() {
   }
   throw new Error("Python " + PYO_VERSION + " not available\nEnv: " + pyoEnv() + "\n" + notes.map((x) => "- " + x).join("\n") + "\nIf you run this site: GitHub > Actions > Cronoff tasks > fetch-language-files (see SETUP-RUNTIMES.md).");
 }
+// ---- Packages: micropip (pure-Python wheels from PyPI) + Pyodide's own packages. Files are saved by the service worker for offline use.
+let micropipP = null;
+function getMicropip() {
+  if (!micropipP) { micropipP = pyodide.loadPackage("micropip").then(() => { pyodide.runPython("import warnings\nwarnings.filterwarnings('ignore', module='micropip')"); return pyodide.pyimport("micropip"); }); micropipP.catch(() => { micropipP = null; }); }
+  return micropipP;
+}
+function pipWhy(e, spec) {
+  const raw = String((e && e.message) || e).trim();
+  const last = (raw.split("\n").filter((x) => x.trim()).pop() || raw).trim();
+  if (/Unsupported content type|find metadata|Not Found|404/i.test(raw) && !/pure Python 3 wheel/i.test(raw)) return "Cannot find \"" + spec + "\" on PyPI. Check the spelling on pypi.org.";
+  if (/pure Python 3 wheel|No matching distribution|find a pure/i.test(raw)) return "Cannot install \"" + spec + "\": it is not a pure-Python package (it needs compiled C or Rust code, which browsers cannot run), or that name or version does not exist. Check the spelling on pypi.org.";
+  if ((self.navigator && navigator.onLine === false) || /Failed to fetch|NetworkError|Load failed|ERR_INTERNET/i.test(last)) return "Cannot download \"" + spec + "\": no connection, and it was not saved for offline use yet. Connect to the internet once to install it.";
+  return "Cannot install \"" + spec + "\": " + last.slice(0, 300);
+}
+async function pipList() {
+  await getMicropip();
+  const j = pyodide.runPython("import json, micropip\njson.dumps([[p.name, p.version, str(p.source)] for p in micropip.list().values()])");
+  return JSON.parse(j).map((a) => ({ name: a[0], version: a[1], source: a[2] }));
+}
+const pipNorm = (s) => String(s).toLowerCase().replace(/[-_.]+/g, "-");
+// Before a run: install any saved package that is not loaded yet in this runner.
+async function ensurePkgs(specs) {
+  let have = null;
+  for (const spec of specs) {
+    const nm = pipNorm(String(spec).split(/[\[<>=!~;\s]/)[0]);
+    if (have === null) { try { have = new Set((await pipList()).map((p) => pipNorm(p.name))); } catch (e) { have = new Set(); } }
+    if (have.has(nm)) continue;
+    emit("[packages] installing " + spec + " ...\n");
+    try { const mp = await getMicropip(); await mp.install(spec); have.add(nm); }
+    catch (e) { emit("[packages] " + pipWhy(e, spec) + "\n", true); }
+  }
+}
 const LANG = {
   async init() {
     pyodide = await pyoStart();
@@ -766,6 +862,21 @@ const LANG = {
     const a = r.toJs(); r.destroy();
     return [{ line: a[0], col: a[1], msg: String(a[2]) }];
   },
+  async pkg(m) {
+    const log = (t) => postMessage({ type: "pkglog", id: m.id, text: t });
+    try {
+      if (m.action === "list") return { list: await pipList() };
+      log("Loading micropip ...");
+      const mp = await getMicropip();
+      if (m.action === "install") {
+        log("Installing " + m.spec + " ...");
+        await mp.install(m.spec);
+      } else if (m.action === "remove") {
+        try { if (typeof mp.uninstall === "function") await mp.uninstall(String(m.spec).split(/[\[<>=!~;\s]/)[0]); } catch (e) {}
+      }
+      return { ok: true, list: await pipList() };
+    } catch (e) { return { error: pipWhy(e, m.spec || "micropip") }; }
+  },
   async run(code) {
     const g = pyodide.globals.get("dict")();
     g.set("__name__", "__main__");             // so `if __name__ == "__main__":` runs
@@ -783,6 +894,7 @@ const LANG = {
         }
         pyodide.runPython("import sys, importlib\nfor _n in " + JSON.stringify(mods) + ":\n    sys.modules.pop(_n, None)\nif '/home/pyodide' not in sys.path:\n    sys.path.insert(0, '/home/pyodide')\nimportlib.invalidate_caches()");
       }
+      if (PKGS.length) await ensurePkgs(PKGS);
       try { found = pyodide.pyodide_py.code.find_imports(code).toJs(); } catch (e) {}
       const need = found.filter((n) => !["pygame", "turtle", "gfx"].includes(n) && !own.has(n));
       if (need.length) await pyodide.loadPackagesFromImports(need.map((n) => "import " + n).join("\n"));
@@ -794,7 +906,7 @@ const LANG = {
       if (/^SystemExit/.test(last)) return;    // sys.exit() / exit() end the program quietly
       const msg = friendlyPy(rawMsg);
       if (/No module named 'tkinter'/.test(last)) throw new Error(msg + "\n\ntkinter does not work in the browser. For windows use turtle, pygame or gfx instead.");
-      if (/^ModuleNotFoundError/.test(last)) throw new Error(msg + "\n\nTip: for pure-Python packages from PyPI run this first:\nimport micropip\nawait micropip.install('package-name')");
+      if (/^ModuleNotFoundError/.test(last)) throw new Error(msg + "\n\nTip: for a package from PyPI press Packages (top bar) and install it there. It then loads in every run, and works offline. In code you can also run:\nimport micropip\nawait micropip.install('package-name')");
       throw new Error(msg);
     } finally {
       g.destroy();
@@ -852,6 +964,51 @@ function sucraseCheck(code, transforms) {
   if (typeof sucrase === "undefined") return [];
   try { sucrase.transform(code, { transforms }); return []; }
   catch (e) { return e && e.loc ? [{ line: e.loc.line, col: e.loc.column, msg: String(e.message).replace(/\s*\(\d+:\d+\)\s*$/, "") }] : []; }
+}
+// ---- npm packages: import _ from "lodash" / require("lodash") / await import("lodash") load from esm.sh (the service worker saves them for offline use).
+const ESM = "https://esm.sh/";
+const tabHasModule = (spec, proj) => { const want = String(spec).replace(/^\.?\//, ""); return proj.some((f) => [want, want + ".js", want + ".ts", want + ".json", want + "/index.js"].includes(f.name)); };
+function scanNpm(sources, proj) {
+  const found = new Set();
+  const add = (sp) => {
+    if (!sp || /^[./]/.test(sp)) return;
+    if (!/^https:\/\//.test(sp) && !/^(@[\w.~-]+\/)?[\w.~-]+(@[^\s"'\/]+)?(\/[^\s"']*)?$/.test(sp)) return;   // must look like a package name or an https URL
+    if (tabHasModule(sp, proj)) return;
+    found.add(sp);
+  };
+  for (const src of sources) {
+    let m;
+    const a = /\b(?:import|export)\b[^'"`;]*?\bfrom\s*["']([^"'\n]+)["']|\bimport\s*["']([^"'\n]+)["']/g;
+    while ((m = a.exec(src))) add(m[1] || m[2]);
+    const b = /\b(?:require|import)\s*\(\s*["']([^"'\n]+)["']\s*\)/g;
+    while ((m = b.exec(src))) add(m[1]);
+  }
+  return Array.from(found).slice(0, 20);
+}
+// An ES module namespace made to work for both import x from "pkg" (default) and require("pkg") (the default export, callable if it is a function).
+function wrapNs(ns) {
+  const d = ns.default;
+  const w = typeof d === "function" ? function (...a) { return d.apply(this, a); } : {};
+  const put = (k, v) => { try { Object.defineProperty(w, k, { value: v, enumerable: true, configurable: true, writable: true }); } catch (e) {} };
+  if (d && (typeof d === "object" || typeof d === "function")) for (const k of Object.keys(d)) put(k, d[k]);
+  for (const k of Object.keys(ns)) if (k !== "default") put(k, ns[k]);
+  put("default", d === undefined ? ns : d);
+  Object.defineProperty(w, "__esModule", { value: true });
+  return w;
+}
+async function loadNpm(spec, mods, errs) {
+  if (Object.prototype.hasOwnProperty.call(mods, spec)) return;
+  delete errs[spec];
+  const url = /^https:\/\//.test(spec) ? spec : ESM + spec;
+  emit("[npm] loading " + spec + " ...\n");
+  try {
+    mods[spec] = wrapNs(await import(url));
+    post({ type: "npm", spec, ok: true });
+  } catch (e) {
+    const off = self.navigator && navigator.onLine === false;
+    errs[spec] = new Error("Cannot load npm module \"" + spec + "\" from esm.sh: " + (off ? "you are offline and it was not saved yet. Open it once while online." : "check the name and version (" + String((e && e.message) || e).slice(0, 120) + ")"));
+    post({ type: "npm", spec, ok: false });
+  }
 }
 function report(e) {
   { const n = errLineOf(e); if (n) post({ type: "errline", line: n, file: self.__errFile || "" }); }
@@ -1056,11 +1213,14 @@ const LANG = {
       const gV = [con, inp, inp, alertFn, st, si, ct, ct, canvas, ctx, doc, win, raf, ct, gfxApi, Img, Aud, beep];
       // Tabs that work together: require("./other.js") and import / export between tabs.
       const proj = PROJECT, cache = {};
+      const npmMods = self.__npmMods || (self.__npmMods = {}), npmErr = self.__npmErr || (self.__npmErr = {});
+      const specs = scanNpm([code].concat(proj.filter((f) => /\.(m?js|ts)$/.test(f.name)).map((f) => f.code)), proj);
+      await Promise.all(specs.map((sp) => loadNpm(sp, npmMods, npmErr)));
       const nameList = () => proj.map((f) => f.name).join(", ");
       const prep = (src, name) => {
-        if (!proj.length) return src;
+        if (!proj.length && !specs.length) return src;
         const ts = /\.ts$/.test(name);
-        if (!ts && !/^\s*(import|export)\b/m.test(src)) return src;       // a plain script stays as it is
+        if (!ts && !/^\s*(import|export)\b|\bimport\s*\(/m.test(src)) return src;       // a plain script stays as it is
         try {
           if (typeof sucrase === "undefined") importScripts(BASE + "ts.js");
           return sucrase.transform(src, { transforms: ts ? ["typescript", "imports"] : ["imports"] }).code;
@@ -1072,9 +1232,14 @@ const LANG = {
       };
       const req = (spec) => {
         const want = String(spec).replace(/^\.?\//, "");
-        if (!proj.length) throw new Error("Cannot find module '" + spec + "'. Turn on \"Tabs work together\" in the settings (the gear).");
         const f = proj.find((x) => [want, want + ".js", want + ".ts", want + ".json", want + "/index.js"].includes(x.name));
-        if (!f) throw new Error("Cannot find module '" + spec + "'. The tabs are: " + nameList());
+        if (!f) {
+          const own = (o) => Object.prototype.hasOwnProperty.call(o, spec);
+          if (own(npmMods)) return npmMods[spec];
+          if (own(npmErr)) throw npmErr[spec];
+          if (!proj.length) throw new Error("Cannot find module '" + spec + "'. Turn on \"Tabs work together\" in the settings (the gear).");
+          throw new Error("Cannot find module '" + spec + "'. The tabs are: " + nameList());
+        }
         if (cache[f.name]) return cache[f.name].exports;
         if (/\.json$/.test(f.name)) return (cache[f.name] = { exports: JSON.parse(f.code) }).exports;
         const mod = cache[f.name] = { exports: {} };
@@ -1175,7 +1340,7 @@ const LANG = {
     try {
       lua.global.set("__out", (s) => emit(String(s)));
       lua.global.set("__err", (s) => emit(String(s), true));
-      lua.global.set("__in", (p) => readLine());
+      lua.global.set("__in", (p) => { const s = readLine(); return s === null ? undefined : s; });
       lua.global.set("gfx", gfxApi);
       await lua.doString(PRELUDE);
       if (PROJECT.length) {      // tabs work together: require("utils") loads utils.lua
@@ -1278,7 +1443,8 @@ const LANG = {
     // Ruby's stdout/stderr arrive through console.log / console.warn; send them to the page instead.
     console.log = (t) => emit(String(t));
     console.warn = (t) => emit(String(t), true);
-    self.__readLine = () => readLine();
+    self.__readLine = () => { const s = readLine(); return s === null ? "\u0001EOF" : s; };   // end of input is a marker string the Ruby side understands
+    self.__stdinFixed = () => STDIN_FIXED;
     self.gfx = gfxApi;
     nextVM = makeVM();
     const vm = await nextVM;
@@ -1336,7 +1502,7 @@ const LANG = {
   async run(code) {
     // JSCPP asks for input only when the program reads it; we answer with a line typed in the page.
     JSCPP.run(code, "", {
-      stdio: { drain: () => readLine() + "\n", write: (s) => emit(s) },
+      stdio: { drain: () => { const s = readLine(); if (s === null) throw new Error("No more input: the program read past the end of the Input box."); return s + "\n"; }, write: (s) => emit(s) },
       includes: { "gfx.h": gfxInclude, gfx: gfxInclude },
       unsigned_overflow: "warn",
     });
@@ -1396,14 +1562,14 @@ const LANG = {
 const LANG = {
   async init() {
     importScripts(BASE + "scheme.js");
-    self.BiwaScheme.define_libfunc("read-line", 0, 1, () => readLine());   // (read-line) is not built in
+    self.BiwaScheme.define_libfunc("read-line", 0, 1, () => { const s = readLine(); return s === null ? self.BiwaScheme.eof : s; });   // (read-line) is not built in
     return "Scheme (BiwaScheme)";
   },
   async run(code) {
     const B = self.BiwaScheme;
     B.Port.current_output = new B.Port.CustomOutput((s) => emit(String(s)));
     B.Port.current_error = new B.Port.CustomOutput((s) => emit(String(s), true));
-    B.Port.current_input = new B.Port.CustomInput((cb) => cb(readLine() + "\n"));
+    B.Port.current_input = new B.Port.CustomInput((cb) => { const s = readLine(); cb(s === null ? B.eof : s + "\n"); });
     await new Promise((resolve, reject) => {
       const it = new B.Interpreter((e) => reject(e));
       it.evaluate(code, () => resolve());
@@ -1447,8 +1613,13 @@ const LANG = {
     session.streams.user_error.stream = { put: (t) => { emit(String(t), true); return true; }, flush: () => true };
     session.streams.user_input.stream = {
       buffer: "",
-      get(len) { while (this.buffer.length < len) this.buffer += readLine() + "\n"; const t = this.buffer.substr(0, len); this.buffer = this.buffer.substr(len); return t; },
-      eof() { return false; },
+      done: false,
+      get(len) {
+        while (!this.done && this.buffer.length < len) { const s = readLine(); if (s === null) this.done = true; else this.buffer += s + "\n"; }
+        if (!this.buffer.length) return "end_of_stream";   // what Tau Prolog's own file streams return at the end
+        const t = this.buffer.substr(0, len); this.buffer = this.buffer.substr(len); return t;
+      },
+      eof() { return this.done && !this.buffer.length; },
     };
     const queries = [];
     const program = code.split("\n").filter((l) => {
@@ -2061,18 +2232,37 @@ $stdout.sync = true
 $stderr.sync = true
 
 class CronoffStdin
+  EOF_MARK = "\u0001EOF"
   def gets(*)
-    JS.global.call(:__readLine).to_s + "\n"
+    s = JS.global.call(:__readLine).to_s
+    return nil if s == EOF_MARK
+    s + "\n"
   end
   def readline(*)
-    gets
+    s = gets
+    raise EOFError, "end of file reached (no more input in the Input box)" if s.nil?
+    s
   end
   def read(*)
-    gets
+    # Input box has text: read everything that is left. Empty box (typing live): one line, as there is no way to end it.
+    return (gets || "") unless JS.global.call(:__stdinFixed).to_s == "true"
+    all = +""
+    while (s = gets)
+      all << s
+    end
+    all
+  end
+  def readlines(*)
+    each_line.to_a
+  end
+  def eof?
+    false
   end
   def each_line
     return to_enum(:each_line) unless block_given?
-    loop { yield gets }
+    while (s = gets)
+      yield s
+    end
   end
   def tty?
     false
@@ -2084,7 +2274,10 @@ module Kernel
     $stdin.gets
   end
   def readline(*)
-    $stdin.gets
+    $stdin.readline
+  end
+  def readlines(*)
+    $stdin.readlines
   end
 end
 
@@ -3002,11 +3195,11 @@ export function drawPickups(ctx) {
   const FKEY = "pyro-files";
   let fileSeq = 0;
   function newFileId() { return "f" + Date.now().toString(36) + (fileSeq++).toString(36) + Math.random().toString(36).slice(2, 6); }
-  let files = [{ id: newFileId(), name: "main.py", code: DEFAULT_CODE }], active = 0;
+  let files = [{ id: newFileId(), name: "main.py", code: DEFAULT_CODE, stdin: "" }], active = 0;
   try {
     const s = JSON.parse(localStorage.getItem(FKEY) || "null");
     if (s && Array.isArray(s.files) && s.files.length) {
-      files = s.files.map((f) => ({ id: newFileId(), name: String(f.name || "main.py"), code: String(f.code || "") }));
+      files = s.files.map((f) => ({ id: newFileId(), name: String(f.name || "main.py"), code: String(f.code || ""), stdin: String(f.stdin || "") }));
       active = Math.min(Math.max(0, s.active | 0), files.length - 1);
     } else {
       files[0].code = localStorage.getItem(KEY) || DEFAULT_CODE;
@@ -3015,6 +3208,37 @@ export function drawPickups(ctx) {
   } catch {}
   codeEl.value = files[active].code;
   function saveFiles() { try { localStorage.setItem(FKEY, JSON.stringify({ files, active })); } catch {} }
+  /* ---------- stdin: one Input box under the editor, saved per tab, read line by line by every language ---------- */
+  const stdinPanel = $("stdinPanel"), stdinBox = $("stdinBox");
+  stdinBox.value = files[active].stdin || "";
+  stdinBox.addEventListener("input", () => { files[active].stdin = stdinBox.value; saveFiles(); });
+  stdinBox.addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); run(); } });
+  $("stdinClear").addEventListener("click", () => { stdinBox.value = ""; files[active].stdin = ""; saveFiles(); stdinBox.focus(); });
+  // null = the box is empty: the program asks while it runs (the Input row under the output). Otherwise the lines it will read.
+  function stdinLinesOf(text) {
+    const t = String(text || "").replace(/\r\n?/g, "\n");
+    if (!t) return null;
+    const lines = t.split("\n");
+    if (lines[lines.length - 1] === "") lines.pop();
+    return lines;
+  }
+  // The program asked for a line: answer from the Input box, or say clearly that there is no more.
+  function feedStdin(run, r, id) {
+    if (run.stdinPos < run.stdinLines.length) {
+      const enc = new TextEncoder().encode(run.stdinLines[run.stdinPos++]).slice(0, 65536);
+      r.bytes.set(enc);
+      r.i32[1] = enc.length;
+    } else {
+      r.i32[1] = -1;   // end of input
+      if (!run.stdinWarned) {
+        run.stdinWarned = true;
+        const b = bufOf(id), last = b.items.length ? b.items[b.items.length - 1].text : "";
+        write((last && !last.endsWith("\n") ? "\n" : "") + "[No more input: the program asked for more lines than the Input box has. Add lines to the Input box and press Run again.]\n", "err", id);
+      }
+    }
+    Atomics.store(r.i32, 0, 1);
+    Atomics.notify(r.i32, 0);
+  }
   codeEl.addEventListener("input", () => {
     refresh();
     files[active].code = codeEl.value;
@@ -3477,6 +3701,7 @@ export function drawPickups(ctx) {
     active = i;
     tabMark[files[i].id] = "";
     codeEl.value = files[i].code;
+    stdinBox.value = files[i].stdin || "";
     codeEl.scrollTop = 0;
     codeEl.scrollLeft = 0;
     refresh();
@@ -3490,7 +3715,7 @@ export function drawPickups(ctx) {
   function addTab() {
     if (files.length >= MAX_TABS) return;
     const k = curKey();
-    files.push({ id: newFileId(), name: uniqueName("untitled." + (k ? LANGS[k].exts[0] : "py"), -1), code: "" });
+    files.push({ id: newFileId(), name: uniqueName("untitled." + (k ? LANGS[k].exts[0] : "py"), -1), code: "", stdin: "" });
     switchTo(files.length - 1);
     codeEl.focus();
   }
@@ -3682,7 +3907,8 @@ export function drawPickups(ctx) {
     langSel.value = k || "";
     langSel.disabled = !!run;
     const rem = k && LANGS[k].remote, noWorker = k && (LANGS[k].preview || LANGS[k].assets);
-    stdinBox.style.display = rem ? "block" : "none";
+    stdinPanel.hidden = !!noWorker;
+    $("stdinHint").textContent = rem ? "sent to the code server when you press Run" : "Run reads one line per input. Empty: type it while the program runs.";
     runBtn.disabled = !!run || (rem ? (!serverReady || (!serverLocal && !navigator.onLine)) : noWorker ? false : !langOk);
     stopBtn.disabled = !run;
     let t;
@@ -3770,6 +3996,12 @@ export function drawPickups(ctx) {
 
   function onMsg(key, ev, slot) {
     const m = ev.data, id = m.tabId, run = id ? runs[id] : null;
+    if (m.type === "pkgres" || m.type === "pkglog") {         // answers from the Packages window
+      const w = pkgWait[m.id];
+      if (w) { if (m.type === "pkglog") w.log(m.text); else { delete pkgWait[m.id]; w.done(m); } }
+      return;
+    }
+    if (m.type === "npm") { npmSeen(m.spec, m.ok); return; }
     if (m.type === "ready") {
       slot.state = "ready"; slot.label = m.version; slot.src = m.src || ""; slot.tries = 0; clearTimeout(slot.retryT);
       pump();
@@ -3810,6 +4042,7 @@ export function drawPickups(ctx) {
       write(m.text, m.err ? "err" : "", id);
     } else if (m.type === "input") {
       if (!run) return;
+      if (run.stdinLines) { feedStdin(run, slot, id); return; }
       run.input = true;
       if (id === tid()) { syncInput(); inputEl.focus(); }
       markTabs();
@@ -3854,7 +4087,7 @@ export function drawPickups(ctx) {
     if (LANGS[k].preview) { runPreview(id); return; }
     if (LANGS[k].assets) { write("CSS is used by HTML tabs. Open the .html tab and press Run there.\n", "info", id); return; }
     if (LANGS[k].remote) { runRemote(k, id); return; }
-    runs[id] = { key: k, input: false, ctl: null, slot: null, err: false, errText: "", errLine: 0, errFile: "", code: codeEl.value,
+    runs[id] = { key: k, input: false, ctl: null, slot: null, err: false, errText: "", errLine: 0, errFile: "", code: codeEl.value, stdinLines: stdinLinesOf(stdinBox.value), stdinPos: 0, stdinWarned: false,
                  project: settings.linkTabs ? files.map((f) => ({ name: f.name, code: f.id === id ? codeEl.value : f.code })) : [] };   // the code as it was when Run was pressed
     queue.push(id);
     pump();
@@ -3876,8 +4109,8 @@ export function drawPickups(ctx) {
     sndInit();
     run.t0 = Date.now();
     s.gkeys.fill(0);
-    if (canvas) s.worker.postMessage({ type: "run", tabId: id, code: run.code, project: run.project, canvas }, [canvas]);
-    else s.worker.postMessage({ type: "run", tabId: id, code: run.code, project: run.project });
+    if (canvas) s.worker.postMessage({ type: "run", tabId: id, code: run.code, project: run.project, stdinFixed: !!run.stdinLines, pkgs: k === "py" ? pyPkgs.slice() : [], canvas }, [canvas]);
+    else s.worker.postMessage({ type: "run", tabId: id, code: run.code, project: run.project, stdinFixed: !!run.stdinLines, pkgs: k === "py" ? pyPkgs.slice() : [] });
   }
 
   function send() {
@@ -4031,7 +4264,6 @@ export function drawPickups(ctx) {
   }
 
   /* ---------- code server: only for languages that cannot run in the browser ---------- */
-  const stdinBox = $("stdinBox");
   /* ---------- HTML preview ---------- */
   const pvWrap = $("pvWrap"), previews = {};   // tabId -> its preview frame
   // Runs first inside the page: sends console.log and errors out to the Output below. No new lines, so line numbers stay yours.
@@ -4202,7 +4434,7 @@ export function drawPickups(ctx) {
       delete bufs[f.id]; delete runErr[f.id]; delete tabMark[f.id];
       if (previews[f.id]) { previews[f.id].remove(); delete previews[f.id]; }
     }
-    files = [{ id: newFileId(), name: "main.py", code: DEFAULT_CODE }];
+    files = [{ id: newFileId(), name: "main.py", code: DEFAULT_CODE, stdin: "" }];
     ours = []; lastText = DEFAULT_CODE;
     switchTo(0);
     clearOut(files[0].id);
@@ -5485,7 +5717,7 @@ box-shadow|Shadow
     const clash = parts.map((el) => el.dataset.game).filter((n) => files.some((f) => f.name.toLowerCase() === n.toLowerCase()));
     if (clash.length) { uiAlert("These tabs already exist: " + clash.join(", ") + ". Rename or close them first, because the game files import each other by name.", "Cannot add the game"); return; }
     if (files.length + parts.length > MAX_TABS) { uiAlert("The example game needs " + parts.length + " tabs and there is room for " + (MAX_TABS - files.length) + ". Close some tabs first.", "Not enough tabs"); return; }
-    for (const el of parts) files.push({ id: newFileId(), name: el.dataset.game, code: el.textContent.replace(/^\n/, "") });
+    for (const el of parts) files.push({ id: newFileId(), name: el.dataset.game, code: el.textContent.replace(/^\n/, ""), stdin: "" });
     settings.linkTabs = true;
     setPanel.querySelectorAll("input[data-set]").forEach((cb) => { cb.checked = !!settings[cb.dataset.set]; });
     try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch {}
@@ -5757,7 +5989,7 @@ box-shadow|Shadow
   $("acctLogout").addEventListener("click", async () => { await api("/api/auth", "POST", { action: "logout" }).catch(() => {}); me = null; say(""); acctView(); });
   $("acctSave").addEventListener("click", async () => {
     say("Saving...", true);
-    const r = await api("/api/files", "PUT", { files: files.map((f) => ({ name: f.name, code: f.id === tid() ? codeEl.value : f.code })) }).catch(() => null);
+    const r = await api("/api/files", "PUT", { files: files.map((f) => ({ name: f.name, code: f.id === tid() ? codeEl.value : f.code, stdin: f.stdin || "" })) }).catch(() => null);
     say(r && r.ok ? "Saved " + files.length + " tab" + (files.length === 1 ? "" : "s") + "." : (r && r.j.error) || "Could not save.", !!(r && r.ok));
   });
   $("acctLoad").addEventListener("click", async () => {
@@ -5768,13 +6000,152 @@ box-shadow|Shadow
     if (!got.length) { say("You have not saved any tabs yet."); return; }
     if (!(await uiConfirm("Your " + files.length + " open tab" + (files.length === 1 ? "" : "s") + " will be replaced by the " + got.length + " saved tab" + (got.length === 1 ? "" : "s") + ".", "Replace your tabs?", "Replace", true))) { say(""); return; }
     for (const id of Object.keys(runs)) stopRun(id, true);
-    files = got.slice(0, MAX_TABS).map((f) => ({ id: newFileId(), name: String(f.name), code: String(f.code) }));
+    files = got.slice(0, MAX_TABS).map((f) => ({ id: newFileId(), name: String(f.name), code: String(f.code), stdin: String(f.stdin || "") }));
     active = 0;
     codeEl.value = files[0].code;
     switchTo(0);
     say("Opened " + files.length + " tab" + (files.length === 1 ? "" : "s") + ".", true);
   });
   loadMe();
+
+  /* ---------- Packages: Python (micropip) and JavaScript (npm via esm.sh) ---------- */
+  const PYKEY = "cronoff-pypkgs", NPMKEY = "cronoff-npm";
+  const loadList = (k) => { try { const a = JSON.parse(localStorage.getItem(k) || "[]"); return Array.isArray(a) ? a.filter((x) => typeof x === "string").slice(0, 100) : []; } catch { return []; } };
+  const saveList = (k, a) => { try { localStorage.setItem(k, JSON.stringify(a)); } catch {} };
+  let pyPkgs = loadList(PYKEY), npmSaved = loadList(NPMKEY);
+  const pkgDlg = $("pkgDlg"), pkgMsg = $("pkgMsg"), pkgListEl = $("pkgList"), npmListEl = $("npmList"), pkgName = $("pkgName"), npmName = $("npmName");
+  const pkgWait = {};
+  let pkgSeq = 0, pkgBusy = false, pkgInfo = {};
+  const pkgNorm = (s) => String(s).toLowerCase().replace(/[-_.]+/g, "-");
+  const specName = (s) => pkgNorm(String(s).split(/[\[<>=!~;\s]/)[0]);
+  const PY_SPEC = /^[A-Za-z0-9][A-Za-z0-9._-]*(\[[A-Za-z0-9,._ -]+\])?\s*([<>=!~]=?\s*[^\s,]+(\s*,\s*[<>=!~]=?\s*[^\s,]+)*)?$/;
+  const NPM_SPEC = /^(@[a-z0-9~._-]+\/)?[a-z0-9~._-]+(@[^\s/]+)?(\/[^\s]*)?$/i;
+  function pkgSay(t, ok) { pkgMsg.textContent = t || ""; pkgMsg.className = ok ? "ok" : ""; }
+  function pkgLock(on) { pkgBusy = on; for (const id of ["pkgInstall", "pkgRefresh", "npmAdd", "npmClear"]) $(id).disabled = on; pkgDlg.querySelectorAll("li button").forEach((b) => { b.disabled = on; }); }
+  function pkgItem(ul, name, note, onRemove) {
+    const li = document.createElement("li");
+    const a = document.createElement("span"); a.className = "nm"; a.textContent = name; li.appendChild(a);
+    if (note) { const n = document.createElement("span"); n.className = "nt"; n.textContent = note; li.appendChild(n); }
+    if (onRemove) { const b = document.createElement("button"); b.type = "button"; b.textContent = "Remove"; b.setAttribute("aria-label", "Remove " + name); b.disabled = pkgBusy; b.addEventListener("click", onRemove); li.appendChild(b); }
+    ul.appendChild(li);
+  }
+  function renderPy() {
+    pkgListEl.replaceChildren();
+    const mine = new Set(pyPkgs.map(specName));
+    for (const sp of pyPkgs) { const i = pkgInfo[specName(sp)]; pkgItem(pkgListEl, sp, i ? "v" + i.version : "loads on next Run", () => removePy(sp)); }
+    const others = Object.keys(pkgInfo).filter((n) => !mine.has(n)).sort().slice(0, 40);
+    for (const n of others) pkgItem(pkgListEl, pkgInfo[n].name, "v" + pkgInfo[n].version + " \u00b7 loaded now");
+    if (!pkgListEl.children.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = "Nothing installed yet."; pkgListEl.appendChild(li); }
+  }
+  function renderNpm() {
+    npmListEl.replaceChildren();
+    for (const sp of npmSaved) pkgItem(npmListEl, sp, "saved for offline");
+    if (!npmListEl.children.length) { const li = document.createElement("li"); li.className = "empty"; li.textContent = "Nothing saved yet. Any module a program imports is saved automatically."; npmListEl.appendChild(li); }
+  }
+  function npmSeen(spec, ok) {
+    if (!ok || /^https?:/.test(spec) || npmSaved.includes(spec)) return;
+    npmSaved.push(spec); saveList(NPMKEY, npmSaved);
+    if (pkgDlg.open) renderNpm();
+  }
+  // Python runner that is free for a package job (starts it when needed).
+  async function pySlot() {
+    if (!crossOriginIsolated) throw new Error("This page is not cross-origin isolated, so Python cannot start (see the status bar).");
+    if (!pool.py || !pool.py[0] || !pool.py[0].worker) startRt("py");
+    const x = pool.py[0];
+    for (let i = 0; i < 720 && x.state !== "ready"; i++) {
+      if (x.state === "fail" && (x.tries || 0) > 5) throw new Error("Python could not start: " + String(x.error || "").split("\n")[0].slice(0, 150));
+      if (i === 0) pkgSay("Starting Python ...");
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    if (x.state !== "ready") throw new Error("Python did not start in time. Check the status bar at the top.");
+    if (x.owner) throw new Error("Python is running a program right now. Wait for it to finish or press Stop, then try again.");
+    return x;
+  }
+  async function pkgOp(msg) {
+    const x = await pySlot();
+    const id = "p" + (++pkgSeq);
+    x.owner = "pkg";
+    try {
+      return await new Promise((resolve, reject) => {
+        const t = setTimeout(() => { delete pkgWait[id]; reject(new Error("Timed out after 3 minutes. Check your connection and try again.")); }, 180000);
+        pkgWait[id] = { log: (s) => pkgSay(s), done: (m) => { clearTimeout(t); resolve(m); } };
+        x.worker.postMessage(Object.assign({ type: "pkg", id }, msg));
+      });
+    } finally { if (x.owner === "pkg") x.owner = null; pump(); }
+  }
+  function absorb(list) { pkgInfo = {}; for (const p of list || []) pkgInfo[pkgNorm(p.name)] = p; }
+  async function pkgRun(job) {
+    if (pkgBusy) return;
+    pkgLock(true);
+    try { await job(); } catch (e) { pkgSay(String((e && e.message) || e)); }
+    pkgLock(false); renderPy(); renderNpm();
+  }
+  $("pkgInstall").addEventListener("click", () => {
+    const spec = pkgName.value.trim();
+    if (!PY_SPEC.test(spec) || spec.length > 100) { pkgSay("Type a package name, for example requests or numpy==1.26.4."); return; }
+    pkgRun(async () => {
+      pkgSay("Working ...");
+      const r = await pkgOp({ action: "install", spec });
+      if (r.error) { pkgSay(r.error); return; }
+      absorb(r.list);
+      const i = pyPkgs.findIndex((x) => specName(x) === specName(spec));
+      if (i >= 0) pyPkgs[i] = spec; else pyPkgs.push(spec);
+      saveList(PYKEY, pyPkgs);
+      pkgName.value = "";
+      pkgSay("Installed " + spec + ". It loads in every Python run now, and works offline once downloaded.", true);
+    });
+  });
+  pkgName.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("pkgInstall").click(); } });
+  function removePy(spec) {
+    pkgRun(async () => {
+      pyPkgs = pyPkgs.filter((x) => x !== spec); saveList(PYKEY, pyPkgs);
+      try { const r = await pkgOp({ action: "remove", spec }); if (!r.error) absorb(r.list); } catch (e) {}   // best effort: the list is what counts
+      pkgSay("Removed " + spec + ".", true);
+    });
+  }
+  $("pkgRefresh").addEventListener("click", () => pkgRun(async () => {
+    const r = await pkgOp({ action: "list" });
+    if (r.error) { pkgSay(r.error); return; }
+    absorb(r.list); pkgSay("");
+  }));
+  // Throwaway worker: loads one module so esm.sh and the service worker save it. Package code never runs in the page itself.
+  function npmPreload(spec) {
+    return new Promise((res) => {
+      const src = "import(" + JSON.stringify("https://esm.sh/" + spec) + ").then(()=>postMessage({ok:true}),(e)=>postMessage({ok:false,error:String((e&&e.message)||e)}))";
+      let w;
+      try { w = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" }))); } catch (e) { res({ ok: false, error: String(e.message || e) }); return; }
+      const t = setTimeout(() => { w.terminate(); res({ ok: false, error: "Timed out after 30 seconds." }); }, 30000);
+      w.onmessage = (ev) => { clearTimeout(t); w.terminate(); res(ev.data); };
+      w.onerror = () => { clearTimeout(t); w.terminate(); res({ ok: false, error: "The module could not be loaded." }); };
+    });
+  }
+  $("npmAdd").addEventListener("click", () => {
+    const spec = npmName.value.trim();
+    if (!NPM_SPEC.test(spec) || spec.length > 100) { pkgSay("Type an npm package name, for example lodash or dayjs@1.11.10."); return; }
+    pkgRun(async () => {
+      pkgSay("Loading " + spec + " from esm.sh ...");
+      const r = await npmPreload(spec);
+      if (!r.ok) { pkgSay(navigator.onLine ? "Cannot load \"" + spec + "\" from esm.sh: " + String(r.error || "").slice(0, 200) : "You are offline, and \"" + spec + "\" was not saved yet."); return; }
+      if (!npmSaved.includes(spec)) { npmSaved.push(spec); saveList(NPMKEY, npmSaved); }
+      npmName.value = "";
+      pkgSay("Saved " + spec + ". It now works offline.", true);
+    });
+  });
+  npmName.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); $("npmAdd").click(); } });
+  $("npmClear").addEventListener("click", () => pkgRun(async () => {
+    try { await caches.delete("cronoff-esm-v1"); } catch (e) {}
+    npmSaved = []; saveList(NPMKEY, npmSaved);
+    pkgSay("Forgot all saved modules. They download again the next time they are used.", true);
+  }));
+  function pkgTab(js) {
+    $("pkgPy").hidden = js; $("pkgJs").hidden = !js;
+    $("pkgTabPy").setAttribute("aria-pressed", String(!js)); $("pkgTabJs").setAttribute("aria-pressed", String(js));
+    pkgSay("");
+  }
+  $("pkgTabPy").addEventListener("click", () => pkgTab(false));
+  $("pkgTabJs").addEventListener("click", () => pkgTab(true));
+  $("pkgBtn").addEventListener("click", () => { renderPy(); renderNpm(); const k = curKey(); pkgTab(k === "js" || k === "ts"); pkgDlg.showModal(); });
+  $("pkgClose").addEventListener("click", () => pkgDlg.close());
 
   /* ---------- offline support ---------- */
   if ("serviceWorker" in navigator) {
