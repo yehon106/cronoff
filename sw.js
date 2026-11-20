@@ -1,5 +1,5 @@
 /* Cronoff (made by yehon106) service worker: offline support + COOP/COEP headers (needed for SharedArrayBuffer) */
-const APP_CACHE = "cronoff-app-v12";
+const APP_CACHE = "cronoff-app-v13";
 const PYO_VERSION = "0.26.4";   // pinned: same as PYODIDE in local-server/get-vendor.js and PYODIDE_VERSION in index.html
 // New cache names on purpose: they drop any broken Pyodide copy an older worker may have saved.
 const PYO_CACHE = "cronoff-pyodide-" + PYO_VERSION + "-v4";
@@ -14,6 +14,8 @@ const PYPI_JSON_ORIGIN = "https://pypi.org";
 const PYPI_FILES_ORIGIN = "https://files.pythonhosted.org";
 const VENDOR_CORE = ["/vendor/pyodide/pyodide.js", "/vendor/pyodide/pyodide.asm.js", "/vendor/pyodide/pyodide.asm.wasm", "/vendor/pyodide/python_stdlib.zip", "/vendor/pyodide/pyodide-lock.json",
   "/vendor/sqljs/sql-wasm.js", "/vendor/sqljs/sql-wasm.wasm", "/vendor/wasmoon/index.js", "/vendor/wasmoon/glue.wasm"];
+// Phase 3: editor fonts (committed in vendor/fonts). Saved ahead of time so every font choice works offline. Filenames never change, so they stay in VENDOR_CACHE.
+const FONTS = ["/vendor/fonts/jetbrains-mono-latin-wght-normal.woff2", "/vendor/fonts/fira-code-latin-wght-normal.woff2", "/vendor/fonts/cascadia-code-latin-wght-normal.woff2"];
 const CDN_ORIGIN = "https://cdn.jsdelivr.net";
 const PYO_PATH = "/pyodide/v" + PYO_VERSION + "/full/";
 const PYO_BASE = CDN_ORIGIN + PYO_PATH;
@@ -71,6 +73,15 @@ self.addEventListener("install", (e) => {
     (async () => {
       // Nothing below may stop the worker from installing: a missing or blocked file is simply fetched when it is first used.
       const vendor = await caches.open(VENDOR_CACHE);
+      // Phase 3: the editor fonts first. They are small, and a slow Python download must not hold them up.
+      await Promise.allSettled(
+        FONTS.map(async (path) => {
+          const u = new URL(path, self.location.origin).href; // good() needs a full URL
+          if (await vendor.match(u)) return;
+          const r = await fetch(u, { cache: "reload" });
+          if (good(r, u)) await vendor.put(u, r);
+        })
+      );
       await Promise.allSettled(
         VENDOR_CORE.map(async (u) => {
           if (await vendor.match(u)) return;
