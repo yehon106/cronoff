@@ -18,6 +18,8 @@ require(path.join(server, "get-vendor.js")).ensureVendor({ out: path.join(site, 
   if (r.failed.length) { console.error("Could not download: " + r.failed.map((f) => f.name).join(", ")); process.exit(1); }
   // the editor (CodeMirror 6) is committed in vendor/codemirror, not downloaded: copy it into the app
   fs.cpSync(path.join(root, "vendor", "codemirror"), path.join(site, "vendor", "codemirror"), { recursive: true });
+  // Phase 3: the editor fonts (JetBrains Mono, Fira Code, Cascadia Code) are committed too
+  fs.cpSync(path.join(root, "vendor", "fonts"), path.join(site, "vendor", "fonts"), { recursive: true });
   for (const f of ["index.html", "vendor/codemirror/cm.js", "vendor/pyodide/pyodide.asm.wasm", "vendor/pyodide/pyodide.js", "vendor/pyodide/python_stdlib.zip", "vendor/pyodide/pyodide-lock.json", "vendor/sqljs/sql-wasm.wasm", "vendor/wasmoon/glue.wasm"]) {
     if (!fs.existsSync(path.join(site, f))) { console.error("Missing from the app: " + f); process.exit(1); }     // never build an app without Python
   }
