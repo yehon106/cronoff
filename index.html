@@ -355,7 +355,158 @@
     #stdinPanel #stdinBox, #pkgDlg input[type=text] { font-size: 16px; }
     #stdinClear, #pkgDlg li button { min-height: 30px; }
   }
+
+  /* ---------- Phase 3: themes, fonts, high contrast ---------- */
+  /* Fonts live in /vendor/fonts (committed, precached by sw.js). Latin only; other letters fall back to the system monospace font. */
+  @font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 100 800; font-display: swap; src: url(/vendor/fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family: "Fira Code"; font-style: normal; font-weight: 300 700; font-display: swap; src: url(/vendor/fonts/fira-code-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  @font-face { font-family: "Cascadia Code"; font-style: normal; font-weight: 200 700; font-display: swap; src: url(/vendor/fonts/cascadia-code-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+  :root {
+    color-scheme: dark;
+    --gutter: #566074; --sel: #2f4a6b; --selac: #2b3a50; --ok: #68d391; --danger: #cf3b40; --danger-ink: #ffffff;
+    --focus: var(--accent);
+    --ff: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;
+    --fs: 15px; --lig: none;
+    --app-bar: var(--bar); --app-ink: var(--ink); --app-line: var(--line); --app-muted: var(--muted);
+  }
+  /* One block per theme. [data-th] lets the little preview cards in Settings wear a theme too. */
+  :root[data-theme="dark"], [data-th="dark"] { color-scheme: dark; --bg: #14171c; --bar: #1b1f26; --edit: #1d2128; --line: #2b313b; --ink: #e3e8ef; --muted: #8590a2; --accent: #19b5c8; --accent-ink: #06222a; --out: #0f1216; --err: #ff7b8a; --info: #6f7e96; --k: #c792ea; --b: #82aaff; --s: #f0c674; --n: #f78c6c; --c: #5c6773; --gutter: #566074; --sel: #2f4a6b; --selac: #2b3a50; --ok: #68d391; --danger: #cf3b40; --danger-ink: #ffffff; }
+  :root[data-theme="light"], [data-th="light"] { color-scheme: light; --bg: #eef1f5; --bar: #e6eaf0; --edit: #ffffff; --line: #c9d1db; --ink: #1b2430; --muted: #546072; --accent: #0b6e7d; --accent-ink: #ffffff; --out: #f6f8fa; --err: #b4232f; --info: #546072; --k: #7c3aed; --b: #0a5cc2; --s: #8a5a00; --n: #b8420a; --c: #66707e; --gutter: #7b8696; --sel: #b9d6fb; --selac: #d6e4f5; --ok: #157033; --danger: #c62a37; --danger-ink: #ffffff; }
+  :root[data-theme="monokai"], [data-th="monokai"] { color-scheme: dark; --bg: #1a1b17; --bar: #21221d; --edit: #272822; --line: #3e3d32; --ink: #f8f8f2; --muted: #a2a28f; --accent: #a6e22e; --accent-ink: #1e1f1c; --out: #1e1f1a; --err: #ff5c8a; --info: #a2a28f; --k: #ff5c96; --b: #66d9ef; --s: #e6db74; --n: #ae81ff; --c: #88846f; --gutter: #8f8b77; --sel: #49483e; --selac: #3e3d32; --ok: #a6e22e; --danger: #ff5c96; --danger-ink: #1e1f1c; }
+  :root[data-theme="dracula"], [data-th="dracula"] { color-scheme: dark; --bg: #1e1f29; --bar: #21222c; --edit: #282a36; --line: #44475a; --ink: #f8f8f2; --muted: #9aa5ce; --accent: #bd93f9; --accent-ink: #1e1f29; --out: #21222c; --err: #ff6e6e; --info: #9aa5ce; --k: #ff79c6; --b: #8be9fd; --s: #f1fa8c; --n: #bd93f9; --c: #7a88bd; --gutter: #7a88bd; --sel: #44475a; --selac: #44475a; --ok: #50fa7b; --danger: #ff5555; --danger-ink: #1e1f29; }
+  :root[data-theme="solarized-dark"], [data-th="solarized-dark"] { color-scheme: dark; --bg: #00212b; --bar: #073642; --edit: #002b36; --line: #124b59; --ink: #a4b3b3; --muted: #8aa0a6; --accent: #35b3a9; --accent-ink: #002b36; --out: #00212b; --err: #ff6b68; --info: #8aa0a6; --k: #9fb100; --b: #3f9ee0; --s: #2fb8ad; --n: #ec6aa6; --c: #728b93; --gutter: #6b868e; --sel: #0d4a5a; --selac: #0d4a5a; --ok: #9fb100; --danger: #dc322f; --danger-ink: #ffffff; }
+  :root[data-theme="solarized-light"], [data-th="solarized-light"] { color-scheme: light; --bg: #e7dfc6; --bar: #eee8d5; --edit: #fdf6e3; --line: #d3c9aa; --ink: #475f67; --muted: #4f666e; --accent: #1b6a99; --accent-ink: #fdf6e3; --out: #f6efd9; --err: #c0302d; --info: #546c74; --k: #5d6b00; --b: #1f6fb0; --s: #1f7a72; --n: #c22d73; --c: #697e80; --gutter: #7d8e8e; --sel: #d6e4d8; --selac: #eee8d5; --ok: #566900; --danger: #c0302d; --danger-ink: #fdf6e3; }
+  :root[data-theme="github-light"], [data-th="github-light"] { color-scheme: light; --bg: #f6f8fa; --bar: #f6f8fa; --edit: #ffffff; --line: #d0d7de; --ink: #24292f; --muted: #57606a; --accent: #0969da; --accent-ink: #ffffff; --out: #f6f8fa; --err: #cf222e; --info: #57606a; --k: #cf222e; --b: #8250df; --s: #0a3069; --n: #0550ae; --c: #6e7781; --gutter: #8c959f; --sel: #b6e3ff; --selac: #ddf4ff; --ok: #1a7f37; --danger: #cf222e; --danger-ink: #ffffff; }
+  :root[data-theme="nord"], [data-th="nord"] { color-scheme: dark; --bg: #272c36; --bar: #3b4252; --edit: #2e3440; --line: #434c5e; --ink: #d8dee9; --muted: #aab5ca; --accent: #88c0d0; --accent-ink: #2e3440; --out: #272c36; --err: #f2a0a8; --info: #a0acc2; --k: #81a1c1; --b: #88c0d0; --s: #a3be8c; --n: #c79bc0; --c: #808da6; --gutter: #7b88a1; --sel: #434c5e; --selac: #434c5e; --ok: #a3be8c; --danger: #a8454f; --danger-ink: #ffffff; }
+  /* High contrast: black or white, 7:1 or better for all text (checked), any theme. */
+  :root[data-contrast="high"][data-scheme="dark"] { --bg: #000000; --bar: #000000; --edit: #000000; --line: #ffffff; --ink: #ffffff; --muted: #d6d6d6; --accent: #ffd60a; --accent-ink: #000000; --out: #000000; --err: #ff9aa2; --info: #cfd8e6; --k: #e6b3ff; --b: #9bd6ff; --s: #ffe58f; --n: #ffbf99; --c: #cfcfcf; --gutter: #cfcfcf; --sel: #0b2566; --selac: #0b2566; --ok: #7dff9b; --danger: #ff9aa2; --danger-ink: #000000; --focus: #ffd60a; }
+  :root[data-contrast="high"][data-scheme="light"] { --bg: #ffffff; --bar: #ffffff; --edit: #ffffff; --line: #000000; --ink: #000000; --muted: #2e2e2e; --accent: #0030c0; --accent-ink: #ffffff; --out: #ffffff; --err: #9c0014; --info: #2e2e2e; --k: #5a0099; --b: #00389c; --s: #6b3500; --n: #8a2400; --c: #3d3d3d; --gutter: #3d3d3d; --sel: #e6f0ff; --selac: #e6f0ff; --ok: #00541a; --danger: #9c0014; --danger-ink: #ffffff; --focus: #0030c0; }
+
+  .mono { font-family: var(--ff); font-size: var(--fs); font-variant-ligatures: var(--lig); }
+  #stdinPanel #stdinBox, #ac, #keybar button { font-family: var(--ff); font-variant-ligatures: var(--lig); }
+  #cm .cm-gutters { color: var(--gutter); }
+  #cm .cm-content ::selection, #cm .cm-content::selection { background: var(--sel); }
+  #ac li.sel { background: var(--selac); }
+  #cm .cm-matchingBracket { background: color-mix(in srgb, var(--accent) 28%, transparent); outline: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); }
+  #acctMsg.ok, #pkgMsg.ok { color: var(--ok); }
+  #uiOk.danger { background: var(--danger); border-color: var(--danger); color: var(--danger-ink); }
+  /* focus rings for everything you can tab to (the editor draws its own caret) */
+  :is(a, select, textarea, summary, input[type=range], input[type=checkbox], [tabindex]:not([tabindex="-1"])):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .ftab:focus-visible { outline-offset: -2px; }
+
+  /* settings panel: appearance section */
+  #setPanel .setSec { display: flex; flex-direction: column; gap: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+  #setPanel .setLbl { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  #setPanel .setHint { font-size: 11.5px; line-height: 1.4; color: var(--muted); }
+  #setPanel .setRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #setPanel .setRow > span:first-child { flex: 0 0 auto; min-width: 64px; }
+  #setPanel #fontSel { flex: 1 1 150px; min-width: 0; padding: 4px 6px; }
+  #setPanel #fsRange { flex: 1 1 130px; min-width: 0; margin: 0; }
+  #setPanel #fsOut { flex: 0 0 auto; min-width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
+  #setPanel #fsReset { flex: 0 0 auto; }
+  #fontPrev { margin: 0; padding: 6px 10px; background: var(--edit); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; white-space: pre; overflow: hidden; text-overflow: ellipsis; }
+  #themeGrid { --sel-ring: var(--accent); display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 6px; min-width: min(330px, calc(100vw - 60px)); }
+  #setPanel .thCard { display: flex; flex-direction: column; padding: 0; overflow: hidden; text-align: left; border: 2px solid var(--app-line); border-radius: 8px; background: var(--app-bar); color: var(--app-ink); cursor: pointer; font-size: 12px; }
+  #setPanel .thCard:hover { border-color: var(--app-muted); }
+  #setPanel .thCard[aria-checked="true"] { border-color: var(--sel-ring); box-shadow: 0 0 0 1px var(--sel-ring); }
+  .thCode { display: block; padding: 7px 8px; background: var(--edit); color: var(--ink); font: 500 11.5px/1.4 ui-monospace, Menlo, Consolas, monospace; white-space: nowrap; overflow: hidden; }
+  .thCode .tk { color: var(--k); } .thCode .tb { color: var(--b); } .thCode .ts { color: var(--s); } .thCode .tn { color: var(--n); }
+  .thSplit { display: flex; padding: 0; }
+  .thHalf { flex: 1 1 50%; min-width: 0; padding: 7px 4px 7px 8px; background: var(--edit); color: var(--ink); overflow: hidden; }
+  .thName { display: flex; align-items: center; gap: 6px; padding: 5px 8px; font-weight: 600; background: var(--app-bar); color: var(--app-ink); }
+  .thCheck { flex: 0 0 auto; width: 1em; }
+  .thCard[aria-checked="true"] .thCheck::before { content: "\2713"; }
+
+  /* Reduced motion: no spinning, no fades, no smooth scrolling, a steady caret. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  }
+
+  /* ---------- High contrast: shapes and underlines next to colours, thick focus rings ---------- */
+  html[data-contrast="high"] *:focus-visible { outline: 3px solid var(--focus) !important; outline-offset: 2px !important; box-shadow: 0 0 0 2px var(--bg); }
+  html[data-contrast="high"] .ftab:focus-visible { outline-offset: -4px !important; box-shadow: none; }
+  html[data-contrast="high"] #cm .cm-editor.cm-focused { outline: 3px solid var(--focus); outline-offset: -3px; }
+  html[data-contrast="high"] ::placeholder, html[data-contrast="high"] #cm .cm-placeholder { color: var(--muted); opacity: 1; }
+  html[data-contrast="high"] button, html[data-contrast="high"] select, html[data-contrast="high"] input, html[data-contrast="high"] textarea { border-width: 2px; }
+  html[data-contrast="high"] a { text-decoration: underline; }
+  html[data-contrast="high"] .ftab.active { font-weight: 800; border-bottom-width: 4px; }
+  html[data-contrast="high"] .ftab .ind.err { width: 10px; height: 10px; border-radius: 0; transform: rotate(45deg); }
+  html[data-contrast="high"] .ftab .ind.input { box-shadow: 0 0 0 2px var(--bar), 0 0 0 4px var(--accent); margin: 0 3px; }
+  html[data-contrast="high"] #out .err { font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+  html[data-contrast="high"] #out .info { font-style: italic; }
+  html[data-contrast="high"] #probBar::before { content: "\26A0\FE0E  "; }
+  html[data-contrast="high"] #acctMsg:not(:empty)::before, html[data-contrast="high"] #pkgMsg:not(:empty)::before { content: "\2716\FE0E  "; }
+  html[data-contrast="high"] #acctMsg.ok::before, html[data-contrast="high"] #pkgMsg.ok::before { content: "\2714\FE0E  "; }
+  html[data-contrast="high"] dialog .seg button[aria-pressed=true] { font-weight: 800; text-decoration: underline; }
+  html[data-contrast="high"] dialog .seg button[aria-pressed=true]::before { content: "\2713  "; }
+  html[data-contrast="high"] #ac { border-width: 2px; border-color: var(--ink); }
+  html[data-contrast="high"] #ac li.sel { background: var(--selac); outline: 2px solid var(--ink); outline-offset: -2px; font-weight: 700; }
+  html[data-contrast="high"] #ac .ic { background: var(--ink); color: var(--edit); }
+  html[data-contrast="high"] #ac .lab b { text-decoration: underline; }
+  html[data-contrast="high"] #cm .cm-matchingBracket { background: var(--sel); outline: 2px solid var(--ink); }
+  html[data-contrast="high"] #cm .cm-nonmatchingBracket { font-weight: 800; text-decoration: underline wavy; }
+  html[data-contrast="high"] #cm .bad { text-decoration-thickness: 2px; }
+  html[data-contrast="high"] #cm .cm-lineNumbers .gbad { font-weight: 800; }
+  html[data-contrast="high"] #cm .tc { font-style: italic; }
+  html[data-contrast="high"] #setPanel .thCard[aria-checked="true"] { border-width: 4px; }
+  html[data-contrast="high"] #setPanel .thCard[aria-checked="true"] .thName { font-weight: 800; text-decoration: underline; }
+
+  /* closing the settings panel */
+  #setPanel #setClose { flex: 0 0 auto; width: 32px; height: 32px; min-width: 32px; padding: 0; display: inline-grid; place-items: center; font-size: 18px; line-height: 1; text-align: center; }
+  #setPanel #setClose svg { width: 16px; height: 16px; display: block; pointer-events: none; }
+  @media (pointer: coarse) {
+    #setPanel #setClose { width: 44px; height: 44px; min-width: 44px; }
+    #setPanel .thCard { min-height: 64px; }
+    #setPanel #fontSel, #setPanel #fsReset { min-height: 40px; }
+    #setPanel #fsRange { min-height: 32px; }
+  }
 </style>
+<script>
+/* Cronoff Phase 3: theme, font and contrast are applied here, in <head>, so the page never flashes the wrong colours.
+   The palettes are CSS (search "Phase 3" in the style block). The choices are saved with the other editor settings (key pyro-editset2).
+   index.html calls CronoffLook.use(settings) later, so there is only one copy of the settings. */
+(function () {
+  var THEMES = [["system", "System", ""], ["dark", "Dark", "dark"], ["light", "Light", "light"], ["monokai", "Monokai", "dark"], ["dracula", "Dracula", "dark"],
+    ["solarized-dark", "Solarized Dark", "dark"], ["solarized-light", "Solarized Light", "light"], ["github-light", "GitHub Light", "light"], ["nord", "Nord", "dark"]];
+  var MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace';
+  var FONTS = [["jetbrains", '"JetBrains Mono"'], ["fira", '"Fira Code"'], ["cascadia", '"Cascadia Code"'], ["system", ""]];
+  var root = document.documentElement, cur = {}, prev = null;
+  try { cur = JSON.parse(localStorage.getItem("pyro-editset2") || "null") || {}; } catch (e) { cur = {}; }
+  function mq(q) { try { return matchMedia(q); } catch (e) { return { matches: false }; } }
+  var dark = mq("(prefers-color-scheme: dark)"), more = mq("(prefers-contrast: more)"), coarse = mq("(pointer: coarse)");
+  function find(list, id) { for (var i = 0; i < list.length; i++) if (list[i][0] === id) return list[i]; return null; }
+  function themeId() { return (find(THEMES, cur.theme) || THEMES[0])[0]; }
+  function resolved() { var id = prev || themeId(); return id === "system" ? (dark.matches ? "dark" : "light") : id; }
+  function high() { return cur.contrast === "on" || (cur.contrast !== "off" && !!more.matches); }
+  function size() { var n = Math.round(+cur.fontSize); return n > 0 ? Math.max(10, Math.min(28, n)) : (coarse.matches ? 16 : 15); }
+  function font() { return (find(FONTS, cur.font) || FONTS[0]); }
+  function apply() {
+    var r = resolved(), f = font(), fam = f[1] ? f[1] + ", " + MONO : MONO;
+    root.setAttribute("data-theme", r);
+    root.setAttribute("data-scheme", find(THEMES, r)[2]);
+    root.setAttribute("data-contrast", high() ? "high" : "normal");
+    root.style.setProperty("--ff", fam);
+    root.style.setProperty("--fs", size() + "px");
+    root.style.setProperty("--lig", cur.ligatures ? "normal" : "none");
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) { var c = getComputedStyle(root).getPropertyValue("--bar").trim(); if (c) m.setAttribute("content", c); }
+    try { window.dispatchEvent(new Event("cronoff-look")); } catch (e) {}
+  }
+  function on(m, fn) { if (m.addEventListener) m.addEventListener("change", fn); else if (m.addListener) m.addListener(fn); }
+  on(dark, function () { if (themeId() === "system") apply(); });
+  on(more, function () { if (!cur.contrast) apply(); });
+  on(coarse, function () { if (!(+cur.fontSize > 0)) apply(); });
+  window.CronoffLook = {
+    themes: THEMES.map(function (t) { return { id: t[0], name: t[1], scheme: t[2] }; }),
+    use: function (s) { cur = s || {}; },
+    apply: apply,
+    preview: function (id) { prev = id && find(THEMES, id) ? id : null; apply(); },
+    themeId: themeId,
+    state: function () { return { theme: themeId(), resolved: resolved(), high: high(), size: size(), font: font()[0], fontCss: font()[1] }; }
+  };
+  apply();
+})();
+</script>
 </head>
 <body>
 <header>
@@ -378,7 +529,17 @@
   <button id="retryBtn" hidden title="Try loading this language again">Try again</button>
 </header>
 <div id="setPanel" role="group" aria-label="Editor settings" hidden>
-  <div class="setHead"><b>Editor settings</b><button id="setClose" type="button" aria-label="Close settings">Close</button></div>
+  <div class="setHead"><b>Editor settings</b><button id="setClose" type="button" aria-label="Close settings" title="Close (Esc)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></button></div>
+  <div class="setSec" role="group" aria-labelledby="lookLbl">
+    <div class="setLbl" id="lookLbl">Look</div>
+    <div id="themeGrid" role="radiogroup" aria-label="Theme"></div>
+    <div class="setRow"><span id="fontLbl">Font</span> <select id="fontSel" aria-labelledby="fontLbl"><option value="jetbrains">JetBrains Mono</option><option value="fira">Fira Code</option><option value="cascadia">Cascadia Code</option><option value="system">System monospace</option></select></div>
+    <div class="setRow"><span id="fsLbl">Size</span> <input id="fsRange" type="range" min="10" max="28" step="1" aria-labelledby="fsLbl"> <output id="fsOut" for="fsRange">15 px</output> <button id="fsReset" type="button" title="Back to the default size">Default</button></div>
+    <label title="Joins characters such as -&gt; =&gt; != &gt;= into one symbol (Fira Code, JetBrains Mono and Cascadia Code only). The text you type does not change."><input type="checkbox" data-set="ligatures"> Font ligatures</label>
+    <pre id="fontPrev" class="mono" aria-hidden="true">if a != b and c >= 1:  x -> y  =></pre>
+    <label title="Black or white background, text at 7:1 contrast or better, thick focus rings, and shapes or underlines next to colours."><input type="checkbox" id="hcOn"> High contrast</label>
+    <div class="setHint" id="hcHint">Follows your device setting until you change it here.</div>
+  </div>
   <label title="On: every tab can use the others. Python: import utils (utils.py). JavaScript and TypeScript: import / export or require(&quot;./utils.js&quot;). Lua: require(&quot;utils&quot;). Other tabs' files (text, json) can be opened too in Python. Off: each tab runs alone."><input type="checkbox" data-set="linkTabs"> Tabs work together (import each other)</label>
   <button id="gameBtn" title="Adds 7 tabs: a complete little game (Star Dodger) built from several files that import each other. Run the game.js tab.">Add the example game (7 tabs)</button>
   <label title="Typing ( [ { or a quote adds the closing one"><input type="checkbox" data-set="autoClose"> Auto-close brackets and quotes</label>
@@ -4442,7 +4603,8 @@ export function drawPickups(ctx) {
 
   /* ---------- smart editing: wiring for the edit engine ---------- */
   const SKEY = "pyro-editset2";
-  const settings = { autoClose: true, enterRemoves: false, autoIndent: true, markers: true, maxRuns: 2, linkTabs: true, serverUrl: "", suggest: true, snippets: true, autocorrect: true };
+  const settings = { autoClose: true, enterRemoves: false, autoIndent: true, markers: true, maxRuns: 2, linkTabs: true, serverUrl: "", suggest: true, snippets: true, autocorrect: true,
+                     theme: "system", font: "jetbrains", fontSize: 0, ligatures: false, contrast: "" };   // Phase 3: fontSize 0 = default size, contrast "" = follow the device
   try {
     const s = JSON.parse(localStorage.getItem(SKEY) || "null");
     if (s) for (const k in settings) if (typeof s[k] === typeof settings[k]) settings[k] = s[k];
@@ -5709,6 +5871,7 @@ box-shadow|Shadow
       settings[cb.dataset.set] = cb.checked;
       if (cb.dataset.set === "markers") { marksOn = cb.checked; queueMarks(codeEl.value); }
       try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch {}
+      if (window.CronoffLook) window.CronoffLook.apply();
     });
   });
   // The example game: several tabs that import each other (needs "Tabs work together").
@@ -5742,9 +5905,76 @@ box-shadow|Shadow
   }
   gearBtn.addEventListener("click", (e) => { e.stopPropagation(); setPanelOpen(setPanel.hidden); });
   $("setClose").addEventListener("click", () => { setPanelOpen(false); gearBtn.focus(); });
-  document.addEventListener("click", (e) => { if (!setPanel.hidden && !setPanel.contains(e.target)) setPanelOpen(false); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !setPanel.hidden) { setPanelOpen(false); gearBtn.focus(); } });
+  // Tap or click anywhere outside the panel (not on the gear, not inside a dialog) closes it. pointerdown covers mouse, touch and pen.
+  document.addEventListener("pointerdown", (e) => {
+    if (setPanel.hidden) return;
+    const t = e.target;
+    if (setPanel.contains(t) || gearBtn.contains(t) || (t.closest && t.closest("dialog"))) return;
+    setPanelOpen(false);
+  }, true);
+  // Esc closes it, unless Esc was already used for something else (a dialog, the suggestion list).
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || setPanel.hidden || e.defaultPrevented) return;
+    if (document.querySelector("dialog[open]")) return;
+    const ac = $("ac");
+    if (ac && !ac.hidden) return;
+    e.preventDefault();
+    setPanelOpen(false);
+    gearBtn.focus();
+  });
   window.addEventListener("resize", () => { if (!setPanel.hidden) setPanelOpen(true); });
+
+  /* ---------- Phase 3: look (theme, font, size, ligatures, high contrast) ---------- */
+  // The colours are CSS (search "Phase 3"); window.CronoffLook is defined in <head> so the page never flashes the wrong theme.
+  (() => {
+    const L = window.CronoffLook;
+    if (!L) return;
+    L.use(settings);
+    const save = () => { try { localStorage.setItem(SKEY, JSON.stringify(settings)); } catch {} };
+    const grid = $("themeGrid"), cards = [];
+    const SAMPLE = '<span class="tk">def</span> <span class="tb">hi</span>(<span class="tn">7</span>) <span class="ts">"a"</span>';
+    const sync = () => cards.forEach((c) => { const on = c.dataset.id === L.themeId(); c.setAttribute("aria-checked", String(on)); c.tabIndex = on ? 0 : -1; });
+    const choose = (id) => { settings.theme = id; save(); L.preview(null); sync(); };
+    L.themes.forEach((t) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "thCard"; b.dataset.id = t.id;
+      b.setAttribute("role", "radio");
+      if (t.id === "system") { b.title = "Follow the light or dark setting of your device"; b.innerHTML = '<span class="thCode thSplit" aria-hidden="true"><span class="thHalf" data-th="dark">' + SAMPLE + '</span><span class="thHalf" data-th="light">' + SAMPLE + '</span></span>'; }
+      else { b.dataset.th = t.id; b.innerHTML = '<span class="thCode" aria-hidden="true">' + SAMPLE + '</span>'; }
+      const nm = document.createElement("span"); nm.className = "thName";
+      const ck = document.createElement("span"); ck.className = "thCheck"; ck.setAttribute("aria-hidden", "true");
+      nm.append(ck, t.name); b.append(nm);
+      b.addEventListener("click", () => choose(t.id));
+      b.addEventListener("pointerenter", (e) => { if (e.pointerType === "mouse") { L.preview(t.id); } });   // live preview while the mouse is over a card
+      grid.appendChild(b); cards.push(b);
+    });
+    grid.addEventListener("pointerleave", (e) => { if (e.pointerType === "mouse") L.preview(null); });
+    grid.addEventListener("keydown", (e) => {                                                           // arrow keys pick and show a theme at once
+      let i = cards.indexOf(document.activeElement);
+      if (i < 0) return;
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+      if (step) i = (i + step + cards.length) % cards.length; else if (e.key === "Home") i = 0; else if (e.key === "End") i = cards.length - 1; else return;
+      e.preventDefault(); cards[i].focus(); choose(cards[i].dataset.id);
+    });
+    const fontSel = $("fontSel"), fsRange = $("fsRange"), fsOut = $("fsOut"), hcOn = $("hcOn"), hcHint = $("hcHint");
+    fontSel.addEventListener("change", () => { settings.font = fontSel.value; save(); L.apply(); });
+    fsRange.addEventListener("input", () => { settings.fontSize = +fsRange.value; save(); L.apply(); });
+    $("fsReset").addEventListener("click", () => { settings.fontSize = 0; save(); L.apply(); });
+    hcOn.addEventListener("change", () => { settings.contrast = hcOn.checked ? "on" : "off"; save(); L.apply(); });
+    const syncUI = () => {
+      const st = L.state();
+      fontSel.value = st.font; fsRange.value = String(st.size); fsOut.textContent = st.size + " px";
+      hcOn.checked = st.high;
+      hcHint.hidden = !!settings.contrast;
+      setPanel.querySelectorAll("input[data-set]").forEach((cb) => { cb.checked = !!settings[cb.dataset.set]; });
+      sync();
+    };
+    // The editor measures its letters: tell it when the font, the size or the ligatures change, and again when a font file finishes loading.
+    const remeasure = () => { if (codeEl.view) codeEl.view.requestMeasure(); };
+    window.addEventListener("cronoff-look", () => { syncUI(); remeasure(); const f = L.state().fontCss; if (document.fonts && document.fonts.load && f) document.fonts.load("400 16px " + f, "Ag->").then(remeasure, () => {}); });
+    if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", remeasure);
+    L.apply();
+  })();
 
   codeEl.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); run(); return; }
